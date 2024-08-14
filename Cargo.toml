@@ -27,5 +27,4 @@ mime = "0.3.17"
 fontdb = "0.21.0"
 nutype = "0.4.3"
 plotters = "0.3.6"
-
-# openssl-sys = { version = "0.9.103", features = ["vendored"] }
+openssl-sys = { version = "0.9.103", features = ["vendored"] }
