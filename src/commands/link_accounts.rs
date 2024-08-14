@@ -41,7 +41,7 @@ pub async fn link_account(
         let mut embed = serenity::CreateEmbed::default().author(
             CreateEmbedAuthor::new("")
                 .name("AtCoder Notify Bot v3")
-                .icon_url(ctx.data().avater_url.as_str())
+                .icon_url(ctx.data().avatar_url.as_str())
                 .url("https://atcoder-notify.com/"),
         );
         if lang == "ja" {
@@ -95,7 +95,7 @@ pub async fn unlink_account(
             let mut embed = serenity::CreateEmbed::default().author(
                 CreateEmbedAuthor::new("")
                     .name("AtCoder Notify Bot v3")
-                    .icon_url(ctx.data().avater_url.as_str())
+                    .icon_url(ctx.data().avatar_url.as_str())
                     .url("https://atcoder-notify.com/"),
             );
             if lang == "ja" {
@@ -118,7 +118,7 @@ pub async fn unlink_account(
             let mut embed = serenity::CreateEmbed::default().author(
                 CreateEmbedAuthor::new("")
                     .name("AtCoder Notify Bot v3")
-                    .icon_url(ctx.data().avater_url.as_str())
+                    .icon_url(ctx.data().avatar_url.as_str())
                     .url("https://atcoder-notify.com/"),
             );
             if lang == "ja" {
@@ -172,7 +172,7 @@ pub async fn show_linked_account(
                 let mut embed = serenity::CreateEmbed::default().author(
                     CreateEmbedAuthor::new("")
                         .name("AtCoder Notify Bot v3")
-                        .icon_url(ctx.data().avater_url.as_str())
+                        .icon_url(ctx.data().avatar_url.as_str())
                         .url("https://atcoder-notify.com/"),
                 );
                 if atcoder_user.is_empty() {
@@ -215,7 +215,7 @@ pub async fn show_linked_account(
                 let mut embed = serenity::CreateEmbed::default().author(
                     CreateEmbedAuthor::new("")
                         .name("AtCoder Notify Bot v3")
-                        .icon_url(ctx.data().avater_url.as_str())
+                        .icon_url(ctx.data().avatar_url.as_str())
                         .url("https://atcoder-notify.com/"),
                 );
                 let mut list: Vec<String> = vec![];

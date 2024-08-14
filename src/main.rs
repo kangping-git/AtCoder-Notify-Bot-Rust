@@ -16,6 +16,7 @@ use scraping::atcoder_ratings::get_ratings;
 use scraping::contests::update_contests;
 use scraping::get_ranking::get_ranking;
 use scraping::get_submission::get_submission;
+use sha2::Digest;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -35,7 +36,7 @@ type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 pub struct Data {
     conn: Arc<Mutex<Pool>>,
-    avater_url: String,
+    avatar_url: String,
 }
 
 async fn interval(ctx: serenity::Context) {
@@ -86,7 +87,7 @@ async fn main() {
     init_logger();
 
     let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
-    let intents = serenity::GatewayIntents::non_privileged();
+    let intents = serenity::GatewayIntents::all();
     let url = format!(
         "mysql://{}:{}@localhost:3306/atcoder_notify",
         std::env::var("MYSQL_USER").expect(""),
@@ -107,12 +108,26 @@ async fn main() {
                         .unwrap();
                 })
             },
-            event_handler: |_ctx, event, _framework, _data| {
+            event_handler: |ctx, event, _framework, _data| {
                 Box::pin(async move {
-                    println!(
-                        "Got an event in event handler: {:?}",
-                        event.snake_case_name()
-                    );
+                    if let serenity::FullEvent::Message {
+                        new_message: message,
+                    } = event
+                    {
+                        println!("{}", message.content);
+                        if format!("{:x}", sha2::Sha256::digest(&message.content))
+                            == "a69893e03d93e1e4d0f66dd41e9df574b70d8f3281ef499eaf04e0437d3cad17"
+                        {
+                            message
+                                .reply(
+                                    &ctx.http,
+                                    std::env::var("SEACRET_COMMAND_OUTPUT")
+                                        .unwrap_or("** **".to_string()),
+                                )
+                                .await
+                                .unwrap_or_default();
+                        }
+                    }
                     Ok(())
                 })
             },
@@ -127,7 +142,7 @@ async fn main() {
                 ctx.set_activity(Option::from(ActivityData::playing("元気にAtCoderを監視中")));
                 Ok(Data {
                     conn: Arc::new(Mutex::new(pool)),
-                    avater_url: ready.user.avatar_url().unwrap(),
+                    avatar_url: ready.user.avatar_url().unwrap(),
                 })
             })
         })

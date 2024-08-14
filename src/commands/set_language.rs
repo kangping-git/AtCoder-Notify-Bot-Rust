@@ -49,7 +49,7 @@ pub async fn set_language(
         let mut embed = serenity::CreateEmbed::default().author(
             CreateEmbedAuthor::new("")
                 .name("AtCoder Notify Bot v3")
-                .icon_url(ctx.data().avater_url.as_str())
+                .icon_url(ctx.data().avatar_url.as_str())
                 .url("https://atcoder-notify.com/"),
         );
         if language_code_str == "ja" {
