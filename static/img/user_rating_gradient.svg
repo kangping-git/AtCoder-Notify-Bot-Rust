@@ -1,0 +1,6 @@
+<linearGradient id="{{user_name}}" x1="0" x2="0" y1="1" y2="0">
+    <stop class="stop1" offset="0%" stop-color="{{rating_color}}" />
+    <stop class="stop2" offset="{{percent}}%" stop-color="{{rating_color}}" />
+    <stop class="stop2" offset="{{percent}}%" stop-color="rgba(0,0,0,0)" />
+    <stop class="stop3" offset="100%" stop-color="rgba(0,0,0,0)" />
+</linearGradient>

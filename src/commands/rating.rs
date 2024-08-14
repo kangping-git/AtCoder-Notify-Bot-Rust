@@ -1,0 +1,225 @@
+use chrono::{DateTime, FixedOffset};
+use image::{ImageBuffer, RgbImage};
+use mysql::prelude::*;
+use mysql::*;
+use plotters::backend::RGBPixel;
+use plotters::prelude::*;
+use poise::{serenity_prelude::CreateAttachment, CreateReply};
+use std::io::Cursor;
+use std::sync::Arc;
+use tera::Tera;
+use tokio::sync::Mutex;
+
+use crate::{
+    scraping::contest_type::ContestType,
+    utils::{svg::create_user_rating::CreateUserRating, svg_to_png::svg_to_png},
+    Context, Error,
+};
+
+#[derive(Debug, poise::ChoiceParameter)]
+pub enum AtCoderContestType {
+    #[name = "Algorithm"]
+    Algorithm,
+    #[name = "Heuristic"]
+    Heuristic,
+}
+
+#[poise::command(prefix_command, slash_command, subcommands("now", "rating_history"))]
+pub async fn rating(_ctx: Context<'_>) -> Result<(), Error> {
+    Ok(())
+}
+
+/// Display the latest rating for a specified AtCoder user.
+#[poise::command(prefix_command, slash_command)]
+pub async fn now(
+    ctx: Context<'_>,
+    #[description = "atcoder_user"] atcoder_user: String,
+    #[description = "contest_type"] contest_type: AtCoderContestType,
+) -> Result<(), Error> {
+    let pool = ctx.data().conn.lock().await;
+
+    let response = {
+        let contest_type: ContestType = match contest_type {
+            AtCoderContestType::Algorithm => ContestType::Algorithm,
+            AtCoderContestType::Heuristic => ContestType::Heuristic,
+        };
+        let pool: &Pool = &pool.clone();
+        let svg_data = CreateUserRating::from_user(
+            &Arc::new(Mutex::new(pool.clone())),
+            atcoder_user,
+            contest_type,
+            0,
+            0,
+        )
+        .await;
+        let mut tmpl = Tera::default();
+        tmpl.add_raw_template(
+            "user_rating.svg",
+            include_str!("../../static/img/user_rating.svg"),
+        )
+        .unwrap();
+        let mut ctx = tera::Context::new();
+        ctx.insert(
+            "main",
+            &format!("{}{}", &svg_data.circle_svg, &svg_data.text_svg),
+        );
+        ctx.insert("gradient", &svg_data.gradient_svg);
+        CreateReply::default().attachment(CreateAttachment::bytes(
+            svg_to_png(
+                &tmpl.render("user_rating.svg", &ctx).unwrap_or_default(),
+                1336,
+                100,
+                1.0,
+                1.0,
+            ),
+            "rating.png",
+        ))
+    };
+
+    ctx.send(response).await?;
+
+    Ok(())
+}
+
+/// Show the rating history for a specified AtCoder user.
+#[poise::command(prefix_command, slash_command, rename = "history")]
+pub async fn rating_history(
+    ctx: Context<'_>,
+    #[description = "atcoder_user"] atcoder_user: String,
+    #[description = "contest_type"] contest_type: AtCoderContestType,
+) -> Result<(), Error> {
+    let pool = ctx.data().conn.lock().await;
+    let mut conn = pool.get_conn().unwrap();
+    let bg_colors = [
+        RGBColor(216, 216, 216),
+        RGBColor(216, 197, 178),
+        RGBColor(178, 216, 178),
+        RGBColor(178, 236, 236),
+        RGBColor(178, 178, 255),
+        RGBColor(236, 236, 178),
+        RGBColor(255, 216, 178),
+        RGBColor(255, 178, 178),
+    ];
+
+    let response = {
+        let contest_type: ContestType = match contest_type {
+            AtCoderContestType::Algorithm => ContestType::Algorithm,
+            AtCoderContestType::Heuristic => ContestType::Heuristic,
+        };
+        let atcoder_rating: Vec<(i32, String, i32)> = conn
+            .exec(
+                "SELECT
+                    user_ratings.rating,
+                    contests.start_time,
+                    contests.duration
+                FROM
+                    user_ratings
+                JOIN
+                    contests
+                ON
+                    contests.contest_id = user_ratings.contest
+                WHERE user_ratings.user_name=:atcoder_id and user_ratings.type=:contest_type",
+                params! {"atcoder_id" => atcoder_user, "contest_type" => contest_type as i8},
+            )
+            .unwrap();
+        let mut xs = vec![];
+        let mut ys = vec![];
+        for i in atcoder_rating {
+            let start_time = chrono::DateTime::parse_from_str(&i.1, "%Y-%m-%d %H:%M:%S%z").unwrap();
+            let offset = chrono::Duration::minutes(i.2 as i64);
+            xs.push(start_time + offset);
+            ys.push(i.0);
+        }
+        let image_width = 640;
+        let image_height = 360;
+        let mut buffer: Vec<u8> = vec![0; image_width * image_height * 3];
+        {
+            let root = BitMapBackend::<RGBPixel>::with_buffer(
+                &mut buffer,
+                (image_width as u32, image_height as u32),
+            )
+            .into_drawing_area();
+
+            root.fill(&WHITE)?;
+
+            let (y_min, y_max) = ys.iter().fold((ys[0], ys[0]), |(m, n), v| {
+                (std::cmp::min(*v, m), std::cmp::max(*v, n))
+            });
+            let y_min = y_min / 400 * 400;
+            let y_min = std::cmp::max(0, y_min - 50);
+            let y_max = y_max / 400 * 400 + 450;
+
+            let caption = "Rating History";
+            let font = ("sans-serif", 20);
+            let point_series = xs
+                .iter()
+                .zip(ys.iter())
+                .map(|(x, y)| EmptyElement::at((*x, *y)) + Circle::new((0, 0), 2, BLACK));
+            let mut chart = ChartBuilder::on(&root)
+                .caption(caption, font.into_font())
+                .margin(20)
+                .x_label_area_size(16)
+                .y_label_area_size(42)
+                .build_cartesian_2d(
+                    *xs.first().unwrap() - (*xs.last().unwrap() - *xs.first().unwrap()) / 20
+                        ..*xs.last().unwrap() + (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
+                    y_min..y_max,
+                )?;
+            chart
+                .configure_mesh()
+                .x_label_formatter(&|x: &DateTime<FixedOffset>| x.format("%Y/%m/%d").to_string())
+                .draw()?;
+            let line_series =
+                LineSeries::new(xs.iter().zip(ys.iter()).map(|(x, y)| (*x, *y)), &BLACK);
+            chart.draw_series((0..8).map(|index: i32| {
+                Rectangle::new(
+                    [
+                        (
+                            xs[0] - (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
+                            400 * index,
+                        ),
+                        (
+                            xs[xs.len() - 1] + (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
+                            match index {
+                                7 => 30000,
+                                _ => 400 * index + 400,
+                            },
+                        ),
+                    ],
+                    ShapeStyle::from(&bg_colors[index as usize]).filled(),
+                )
+            }))?;
+            for i in 0..100 {
+                chart.draw_series(LineSeries::new(
+                    [
+                        (
+                            xs[0] - (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
+                            400 * i,
+                        ),
+                        (
+                            xs[xs.len() - 1] + (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
+                            400 * i,
+                        ),
+                    ],
+                    WHITE,
+                ))?;
+            }
+            chart.draw_series(point_series)?;
+            chart.draw_series(line_series)?;
+        }
+
+        let img: RgbImage = ImageBuffer::from_raw(image_width as u32, image_height as u32, buffer)
+            .expect("Failed to create image buffer");
+
+        let mut png_data = Vec::new();
+        {
+            let mut cursor = Cursor::new(&mut png_data);
+            img.write_to(&mut cursor, image::ImageFormat::Png)?;
+        }
+        CreateReply::default().attachment(CreateAttachment::bytes(png_data, "history.png"))
+    };
+
+    ctx.send(response).await?;
+
+    Ok(())
+}

@@ -1,0 +1,146 @@
+[
+    {
+        "name": "upcoming_contests",
+        "usage": "/atcoder contest upcoming",
+        "description": [
+            "今後開催されるAtCoderコンテストの情報を表示します。",
+            "このコマンドは、近いうちに予定されているすべてのコンテストのリストを提供します。"
+        ]
+    },
+    {
+        "name": "current_contests",
+        "usage": "/atcoder contest current",
+        "description": [
+            "現在進行中のコンテストの詳細を表示します。",
+            "このコマンドは、ライブで進行中のコンテストの最新情報を提供します。"
+        ]
+    },
+    {
+        "name": "past_contests",
+        "usage": "/atcoder contest past",
+        "description": [
+            "過去のAtCoderコンテストの情報を取得します。",
+            "このコマンドを使用すると、既に終了したコンテストの詳細を確認できます。"
+        ]
+    },
+    {
+        "name": "rating",
+        "usage": "/atcoder rating {username} {rating_type}",
+        "description": [
+            "指定されたユーザーの最新のレーティングを表示します。",
+            "このコマンドは、特定のユーザーの最新のレーティングを提供し、そのパフォーマンスを追跡するのに役立ちます。"
+        ]
+    },
+    {
+        "name": "rating_history",
+        "usage": "/atcoder rating history {username} {rating_type}",
+        "description": [
+            "指定されたユーザーのレーティング履歴を表示します。",
+            "このコマンドを使用すると、特定のユーザーのレーティングの変遷を確認できます。"
+        ]
+    },
+    {
+        "name": "set_notification_contest",
+        "usage": "/atcoder set-notification contest {channel}",
+        "description": [
+            "AtCoderコンテスト情報の通知を行うチャンネルを設定します。",
+            "このコマンドを使用すると、今後のコンテストの詳細が投稿される特定のチャンネルを指定できます。"
+        ]
+    },
+    {
+        "name": "set_notification_submission",
+        "usage": "/atcoder set-notification submission {channel}",
+        "description": [
+            "ユーザーの提出情報の通知を行うチャンネルを設定します。",
+            "このコマンドは、ユーザーの提出更新情報が送信されるチャンネルを設定します。"
+        ]
+    },
+    {
+        "name": "unset_notification_contest",
+        "usage": "/atcoder unset-notification contest",
+        "description": [
+            "コンテスト通知の設定を解除します。",
+            "このコマンドは、以前に指定されたチャンネルでのコンテスト情報の通知を無効にします。"
+        ]
+    },
+    {
+        "name": "unset_notification_submission",
+        "usage": "/atcoder unset-notification submission",
+        "description": [
+            "ユーザー提出情報の通知設定を解除します。",
+            "このコマンドは、以前に指定されたチャンネルでのユーザー提出の通知を無効にします。"
+        ]
+    },
+    {
+        "name": "show_notification",
+        "usage": "/atcoder show-notification",
+        "description": [
+            "現在設定されているコンテストと提出情報の通知チャンネルを表示します。",
+            "このコマンドは、通知を受け取るように設定されたチャンネルを確認するのに役立ちます。"
+        ]
+    },
+    {
+        "name": "link_account",
+        "usage": "/atcoder link-account {discord_user} {atcoder_username}",
+        "description": [
+            "指定されたAtCoderアカウントを現在のDiscordアカウントにリンクします。",
+            "このコマンドを使用すると、指定されたAtCoderユーザー名をDiscordアカウントに接続して、個別の更新情報を受け取ることができます。"
+        ]
+    },
+    {
+        "name": "unlink_account",
+        "usage": "/atcoder unlink-account {discord_user}",
+        "description": [
+            "現在のDiscordアカウントからAtCoderアカウントのリンクを解除します。",
+            "このコマンドは、Discordアカウントと関連付けられたAtCoderアカウントの接続を解除します。"
+        ]
+    },
+    {
+        "name": "show_linked_account",
+        "usage": "/atcoder show-linked-account [discord_user]",
+        "description": [
+            "現在のDiscordアカウントにリンクされているAtCoderアカウントを表示します。",
+            "このコマンドは、現在のDiscordプロフィールに関連付けられているAtCoderアカウントの情報を表示します。"
+        ]
+    },
+    {
+        "name": "register_account",
+        "usage": "/atcoder register-account {atcoder_username}",
+        "description": [
+            "指定されたAtCoderアカウントをDiscordアカウントとリンクせずに登録します。",
+            "このコマンドを使用すると、DiscordプロフィールにリンクせずにAtCoderアカウントを追跡できます。"
+        ]
+    },
+    {
+        "name": "delete_account",
+        "usage": "/atcoder delete-account {atcoder_username}",
+        "description": [
+            "指定されたAtCoderアカウントの登録を削除します。",
+            "このコマンドを使用すると、登録リストから指定されたAtCoderアカウントを削除できます。"
+        ]
+    },
+    {
+        "name": "show_accounts",
+        "usage": "/atcoder show-accounts",
+        "description": [
+            "現在登録されているすべてのAtCoderアカウントのリストを表示します。",
+            "このコマンドは、Discordにリンクせずに登録されているすべてのAtCoderアカウントを表示するのに役立ちます。"
+        ]
+    },
+    {
+        "name": "help",
+        "usage": "/atcoder help",
+        "description": [
+            "利用可能なすべてのコマンドとその使用方法のリストを表示します。",
+            "このコマンドは、AtCoderボットで使用できるすべてのコマンドの概要、その構文と目的を提供します。"
+        ]
+    },
+    {
+        "name": "set_language",
+        "usage": "/server set-language {language_code}",
+        "description": [
+            "サーバーのデフォルト言語を設定します。",
+            "このコマンドを使用して、サーバーで使用される言語を変更できます。"
+        ]
+    }
+]

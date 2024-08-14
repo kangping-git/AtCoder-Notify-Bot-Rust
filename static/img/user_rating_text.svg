@@ -1,0 +1,1 @@
+<text x="{{x}}" y="{{y}}" font-size="80" alignment-baseline="hanging" fill="{{rating_color}}">{{username}}</text>

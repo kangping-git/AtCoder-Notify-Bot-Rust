@@ -1,0 +1,7 @@
+/target
+.env
+*.db
+scraping/node_modules/
+scraping/dist/
+*.info
+*.log

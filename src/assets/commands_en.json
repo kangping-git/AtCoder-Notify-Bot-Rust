@@ -1,0 +1,154 @@
+[
+    {
+        "name": "upcoming_contests",
+        "usage": "/atcoder contest upcoming",
+        "description": [
+            "Display information about upcoming AtCoder contests.",
+            "This command provides a list of all the contests that are scheduled to take place in the near future."
+        ]
+    },
+    {
+        "name": "current_contests",
+        "usage": "/atcoder contest current",
+        "description": [
+            "Show details about contests that are currently ongoing.",
+            "This command helps you stay updated with the contests that are live and currently in progress."
+        ]
+    },
+    {
+        "name": "past_contests",
+        "usage": "/atcoder contest past",
+        "description": [
+            "Retrieve information on past AtCoder contests.",
+            "Use this command to review the contests that have already concluded."
+        ]
+    },
+    {
+        "name": "rating",
+        "usage": "/atcoder rating {username} {rating_type}",
+        "description": [
+            "Display the latest rating for a specified AtCoder user.",
+            "This command provides the most recent rating of the given user, useful for tracking their performance."
+        ]
+    },
+    {
+        "name": "rating_history",
+        "usage": "/atcoder rating history {username} {rating_type}",
+        "description": [
+            "Show the rating history for a specified AtCoder user.",
+            "This command allows you to view the historical ratings of the given user over time."
+        ]
+    },
+    {
+        "name": "latest_submission",
+        "usage": "/atcoder submission latest {username}",
+        "description": [
+            "Display the latest submission by a specified AtCoder user.",
+            "This command shows the most recent submission made by the given user, including details about the problem and submission time."
+        ]
+    },
+    {
+        "name": "set_notification_contest",
+        "usage": "/atcoder set-notification contest {channel}",
+        "description": [
+            "Set the channel for notifications about AtCoder contest information.",
+            "This command allows you to designate a specific channel where upcoming contest details will be posted."
+        ]
+    },
+    {
+        "name": "set_notification_submission",
+        "usage": "/atcoder set-notification submission {channel}",
+        "description": [
+            "Set the channel for notifications about user submissions.",
+            "This command configures the channel where updates on user submissions will be sent."
+        ]
+    },
+    {
+        "name": "unset_notification_contest",
+        "usage": "/atcoder unset-notification contest",
+        "description": [
+            "Remove the channel set for contest notifications.",
+            "This command disables the notifications for contest information in the previously designated channel."
+        ]
+    },
+    {
+        "name": "unset_notification_submission",
+        "usage": "/atcoder unset-notification submission",
+        "description": [
+            "Remove the channel set for user submission notifications.",
+            "This command disables notifications for user submissions in the previously designated channel."
+        ]
+    },
+    {
+        "name": "show_notification",
+        "usage": "/atcoder show-notification",
+        "description": [
+            "Display the currently set notification channels for contests and submissions.",
+            "This command helps you review which channels are configured to receive notifications."
+        ]
+    },
+    {
+        "name": "link_account",
+        "usage": "/atcoder link-account {discord_user} {atcoder_username}",
+        "description": [
+            "Link a specified AtCoder account with the current Discord account.",
+            "This command connects your Discord account to the provided AtCoder username, allowing for personalized updates."
+        ]
+    },
+    {
+        "name": "unlink_account",
+        "usage": "/atcoder unlink-account {discord_user}",
+        "description": [
+            "Unlink the AtCoder account from the current Discord account.",
+            "This command removes the connection between your Discord account and any associated AtCoder account."
+        ]
+    },
+    {
+        "name": "show_linked_account",
+        "usage": "/atcoder show-linked-account [discord_user]",
+        "description": [
+            "Show the AtCoder account currently linked to the Discord account.",
+            "This command displays information about the AtCoder account that is currently associated with your Discord profile."
+        ]
+    },
+    {
+        "name": "register_account",
+        "usage": "/atcoder register-account {atcoder_username}",
+        "description": [
+            "Register a specified AtCoder account without linking it to the Discord account.",
+            "This command allows you to keep track of AtCoder accounts without creating a link to your Discord profile."
+        ]
+    },
+    {
+        "name": "delete_account",
+        "usage": "/atcoder delete-account {atcoder_username}",
+        "description": [
+            "Delete the registration of a specified AtCoder account.",
+            "Use this command to remove an AtCoder account from your registration list."
+        ]
+    },
+    {
+        "name": "show_accounts",
+        "usage": "/atcoder show-accounts",
+        "description": [
+            "Display a list of all currently registered AtCoder accounts.",
+            "This command helps you view all AtCoder accounts that have been registered without linking them to Discord."
+        ]
+    },
+    {
+        "name": "help",
+        "usage": "/atcoder help",
+        "description": [
+            "Display a list of all available commands and their usage.",
+            "This command provides an overview of all commands you can use with the AtCoder bot, including their syntax and purpose."
+        ]
+    },
+    {
+        "name": "set_language",
+        "usage": "/server set-language {language_code}",
+        "description": [
+            "Set the default language for the server.",
+            "Use this command to change the language used on the server."
+        ]
+    }
+]

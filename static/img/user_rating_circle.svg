@@ -1,0 +1,1 @@
+<circle fill="url({{fill_url}})" cx="{{cx}}" cy="{{cy}}" r="46" stroke="{{stroke_color}}" stroke-width="4"></circle>
