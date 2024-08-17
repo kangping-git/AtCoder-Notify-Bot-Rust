@@ -24,7 +24,7 @@ pub async fn link_account(
         )?;
     } else {
         conn.exec_drop(
-            r"UPDATE users SET atcoder_user=:atcoder_username WHERE id=:id",
+            r"UPDATE users SET atcoder_username=:atcoder_username WHERE id=:id",
             params! {"id" => &link_accounts[0], "atcoder_username" => &atcoder_user},
         )?;
     }
