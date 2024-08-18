@@ -1,12 +1,13 @@
 use chrono::{DateTime, FixedOffset};
+use full_palette::GREY_800;
 use image::{ImageBuffer, RgbImage};
 use mysql::prelude::*;
 use mysql::*;
 use plotters::backend::RGBPixel;
 use plotters::prelude::*;
 use poise::{serenity_prelude::CreateAttachment, CreateReply};
-use std::io::Cursor;
 use std::sync::Arc;
+use std::{io::Cursor, vec};
 use tera::Tera;
 use tokio::sync::Mutex;
 
@@ -85,7 +86,7 @@ pub async fn now(
 #[poise::command(prefix_command, slash_command, rename = "history")]
 pub async fn rating_history(
     ctx: Context<'_>,
-    #[description = "atcoder_user"] atcoder_user: String,
+    #[description = "atcoder_user_list"] atcoder_user_list: String,
     #[description = "contest_type"] contest_type: AtCoderContestType,
 ) -> Result<(), Error> {
     let pool = ctx.data().conn.lock().await;
@@ -100,38 +101,25 @@ pub async fn rating_history(
         RGBColor(255, 216, 178),
         RGBColor(255, 178, 178),
     ];
+    let circle_bg_colors = [
+        RGBColor(128, 128, 128),
+        RGBColor(128, 64, 0),
+        RGBColor(0, 128, 0),
+        RGBColor(0, 192, 192),
+        RGBColor(0, 0, 255),
+        RGBColor(192, 192, 0),
+        RGBColor(255, 128, 0),
+        RGBColor(255, 0, 0),
+    ];
 
     let response = {
         let contest_type: ContestType = match contest_type {
             AtCoderContestType::Algorithm => ContestType::Algorithm,
             AtCoderContestType::Heuristic => ContestType::Heuristic,
         };
-        let atcoder_rating: Vec<(i32, String, i32)> = conn
-            .exec(
-                "SELECT
-                    user_ratings.rating,
-                    contests.start_time,
-                    contests.duration
-                FROM
-                    user_ratings
-                JOIN
-                    contests
-                ON
-                    contests.contest_id = user_ratings.contest
-                WHERE user_ratings.user_name=:atcoder_id and user_ratings.type=:contest_type",
-                params! {"atcoder_id" => atcoder_user, "contest_type" => contest_type as i8},
-            )
-            .unwrap();
-        let mut xs = vec![];
-        let mut ys = vec![];
-        for i in atcoder_rating {
-            let start_time = chrono::DateTime::parse_from_str(&i.1, "%Y-%m-%d %H:%M:%S%z").unwrap();
-            let offset = chrono::Duration::minutes(i.2 as i64);
-            xs.push(start_time + offset);
-            ys.push(i.0);
-        }
-        let image_width = 640;
-        let image_height = 360;
+        let contest_type = contest_type as i8;
+        let image_width = 1280;
+        let image_height = 720;
         let mut buffer: Vec<u8> = vec![0; image_width * image_height * 3];
         {
             let root = BitMapBackend::<RGBPixel>::with_buffer(
@@ -142,44 +130,131 @@ pub async fn rating_history(
 
             root.fill(&WHITE)?;
 
-            let (y_min, y_max) = ys.iter().fold((ys[0], ys[0]), |(m, n), v| {
-                (std::cmp::min(*v, m), std::cmp::max(*v, n))
-            });
-            let y_min = y_min / 400 * 400;
-            let y_min = std::cmp::max(0, y_min - 50);
-            let y_max = y_max / 400 * 400 + 450;
+            let mut y_min = 99999999;
+            let mut y_max = 0;
+            let mut x_min = chrono::Utc::now().into();
+            let x_max =
+                chrono::DateTime::parse_from_str("2015-04-11 21:00:00+0900", "%Y-%m-%d %H:%M:%S%z");
+            let mut x_max = x_max.unwrap();
 
             let caption = "Rating History";
-            let font = ("sans-serif", 20);
-            let point_series = xs
-                .iter()
-                .zip(ys.iter())
-                .map(|(x, y)| EmptyElement::at((*x, *y)) + Circle::new((0, 0), 2, BLACK));
+            let font = ("sans-serif", 40);
+
+            let mut point_series_vec = vec![];
+            let mut line_series_vec = vec![];
+
+            let user_list: Vec<&str> = atcoder_user_list.split(',').collect();
+            for (idx, atcoder_user) in user_list.clone().into_iter().enumerate() {
+                let atcoder_rating: Vec<(i32, String, i32)> = conn
+                    .exec(
+                        "SELECT
+                            user_ratings.rating,
+                            contests.start_time,
+                            contests.duration
+                        FROM
+                            user_ratings
+                        JOIN
+                            contests
+                        ON
+                            contests.contest_id = user_ratings.contest
+                        WHERE user_ratings.user_name=:atcoder_id and user_ratings.type=:contest_type",
+                        params! {"atcoder_id" => atcoder_user, "contest_type" => contest_type},
+                    )
+                    .unwrap();
+                let mut xs = vec![];
+                let mut ys = vec![];
+                for i in atcoder_rating {
+                    let start_time =
+                        chrono::DateTime::parse_from_str(&i.1, "%Y-%m-%d %H:%M:%S%z").unwrap();
+                    let offset = chrono::Duration::minutes(i.2 as i64);
+                    xs.push(start_time + offset);
+                    ys.push(i.0);
+                }
+
+                let (y_min_temp, y_max_temp) = ys.iter().fold((ys[0], ys[0]), |(m, n), v| {
+                    (std::cmp::min(*v, m), std::cmp::max(*v, n))
+                });
+                let y_min_temp = y_min_temp / 400 * 400;
+                let y_min_temp = std::cmp::max(0, y_min_temp - 50);
+                let y_max_temp = y_max_temp / 400 * 400 + 450;
+                let x_min_temp =
+                    *xs.first().unwrap() - (*xs.last().unwrap() - *xs.first().unwrap()) / 20;
+                let x_max_temp =
+                    *xs.last().unwrap() + (*xs.last().unwrap() - *xs.first().unwrap()) / 20;
+
+                y_min = std::cmp::min(y_min, y_min_temp);
+                y_max = std::cmp::max(y_max, y_max_temp);
+                x_min = std::cmp::min(x_min, x_min_temp);
+                x_max = std::cmp::max(x_max, x_max_temp);
+                if user_list.len() == 1 {
+                    let point_series = xs
+                        .iter()
+                        .zip(ys.iter())
+                        .map(|(x, y)| {
+                            EmptyElement::at((*x, *y))
+                                + Circle::new(
+                                    (0, 0),
+                                    6,
+                                    ShapeStyle::from(
+                                        &circle_bg_colors[std::cmp::min(
+                                            y / 400,
+                                            (circle_bg_colors.len() - 1) as i32,
+                                        )
+                                            as usize],
+                                    )
+                                    .filled(),
+                                )
+                                + Circle::new((0, 0), 6, WHITE.stroke_width(2))
+                        })
+                        .collect::<Vec<_>>();
+                    point_series_vec.push(point_series);
+                } else {
+                    let point_series = xs
+                        .iter()
+                        .zip(ys.iter())
+                        .map(|(x, y)| {
+                            EmptyElement::at((*x, *y))
+                                + Circle::new(
+                                    (0, 0),
+                                    6,
+                                    HSLColor(idx as f64 / user_list.len() as f64, 1.0, 0.5)
+                                        .filled(),
+                                )
+                                + Circle::new((0, 0), 6, TRANSPARENT)
+                        })
+                        .collect::<Vec<_>>();
+                    point_series_vec.push(point_series);
+                };
+                if user_list.len() == 1 {
+                    let line_series =
+                        LineSeries::new(xs.iter().zip(ys.iter()).map(|(x, y)| (*x, *y)), GREY_800);
+                    line_series_vec.push(line_series);
+                } else {
+                    let line_series = LineSeries::new(
+                        xs.iter().zip(ys.iter()).map(|(x, y)| (*x, *y)),
+                        HSLColor(idx as f64 / user_list.len() as f64, 1.0, 0.5),
+                    );
+                    line_series_vec.push(line_series);
+                };
+            }
+
             let mut chart = ChartBuilder::on(&root)
                 .caption(caption, font.into_font())
-                .margin(20)
-                .x_label_area_size(16)
-                .y_label_area_size(42)
-                .build_cartesian_2d(
-                    *xs.first().unwrap() - (*xs.last().unwrap() - *xs.first().unwrap()) / 20
-                        ..*xs.last().unwrap() + (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
-                    y_min..y_max,
-                )?;
+                .margin(40)
+                .x_label_area_size(32)
+                .y_label_area_size(84)
+                .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
             chart
                 .configure_mesh()
                 .x_label_formatter(&|x: &DateTime<FixedOffset>| x.format("%Y/%m/%d").to_string())
                 .draw()?;
-            let line_series =
-                LineSeries::new(xs.iter().zip(ys.iter()).map(|(x, y)| (*x, *y)), &BLACK);
+
             chart.draw_series((0..8).map(|index: i32| {
                 Rectangle::new(
                     [
+                        (x_min - (x_max - x_min) / 20, 400 * index),
                         (
-                            xs[0] - (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
-                            400 * index,
-                        ),
-                        (
-                            xs[xs.len() - 1] + (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
+                            x_max + (x_max - x_min) / 20,
                             match index {
                                 7 => 30000,
                                 _ => 400 * index + 400,
@@ -192,20 +267,36 @@ pub async fn rating_history(
             for i in 0..100 {
                 chart.draw_series(LineSeries::new(
                     [
-                        (
-                            xs[0] - (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
-                            400 * i,
-                        ),
-                        (
-                            xs[xs.len() - 1] + (*xs.last().unwrap() - *xs.first().unwrap()) / 20,
-                            400 * i,
-                        ),
+                        (x_min - (x_max - x_min) / 20, 400 * i),
+                        (x_max + (x_max - x_min) / 20, 400 * i),
                     ],
                     WHITE,
                 ))?;
             }
-            chart.draw_series(point_series)?;
-            chart.draw_series(line_series)?;
+            let user_list: Vec<&str> = atcoder_user_list.split(',').collect();
+            for (idx, data) in line_series_vec.into_iter().enumerate() {
+                let idx_clone = idx;
+                let user_name = user_list[idx];
+                let user_list_clone = user_list.clone();
+                chart
+                    .draw_series(data)?
+                    .label(user_name)
+                    .legend(move |(x, y)| {
+                        PathElement::new(
+                            vec![(x, y), (x + 20, y)],
+                            HSLColor(idx_clone as f64 / user_list_clone.len() as f64, 1.0, 0.5), // Use the cloned user_list
+                        )
+                    });
+            }
+            for i in point_series_vec {
+                chart.draw_series(i)?;
+            }
+            chart
+                .configure_series_labels()
+                .border_style(BLACK)
+                .background_style(WHITE.mix(0.8))
+                .draw()
+                .unwrap();
         }
 
         let img: RgbImage = ImageBuffer::from_raw(image_width as u32, image_height as u32, buffer)
