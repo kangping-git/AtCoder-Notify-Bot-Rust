@@ -320,7 +320,11 @@ pub async fn get_ranking(
                         }));
 
                         rate_diff_list.push(TextConfig {
-                            value: (rate as i32 - users.Rating).to_string(),
+                            value: if rate as i32 - users.Rating > 0 {
+                                format!("+{}", rate as i32 - users.Rating)
+                            } else {
+                                (rate as i32 - users.Rating).to_string()
+                            },
                             color: match rate as i32 - users.Rating {
                                 x if x > 0 => "red",
                                 x if x < 0 => "Aquamarine",
