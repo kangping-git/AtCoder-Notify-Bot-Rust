@@ -223,9 +223,12 @@ pub async fn start() {
 
     log::info!("Web Server Service");
     let url = format!(
-        "mysql://{}:{}@localhost:3306/atcoder_notify",
+        "mysql://{}:{}@{}:{}/{}",
         std::env::var("MYSQL_USER").expect(""),
-        std::env::var("MYSQL_PASS").expect("")
+        std::env::var("MYSQL_PASS").expect(""),
+        std::env::var("MYSQL_HOST").expect(""),
+        std::env::var("MYSQL_PORT").expect(""),
+        std::env::var("MYSQL_DATABASE").expect("")
     );
     let pool = Pool::new(url.as_str()).unwrap();
 

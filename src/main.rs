@@ -45,9 +45,12 @@ async fn interval(ctx: serenity::Context) {
     let mut last_minute = 100;
     let mut date = chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
     let url = format!(
-        "mysql://{}:{}@localhost:3306/atcoder_notify",
+        "mysql://{}:{}@{}:{}/{}",
         std::env::var("MYSQL_USER").expect(""),
-        std::env::var("MYSQL_PASS").expect("")
+        std::env::var("MYSQL_PASS").expect(""),
+        std::env::var("MYSQL_HOST").expect(""),
+        std::env::var("MYSQL_PORT").expect(""),
+        std::env::var("MYSQL_DATABASE").expect("")
     );
     let pool_raw = Pool::new(url.as_str()).unwrap();
     let pool = Arc::new(Mutex::new(pool_raw.clone()));
