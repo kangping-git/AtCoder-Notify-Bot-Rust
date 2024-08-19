@@ -26,6 +26,7 @@ use scraping::contest_type::ContestType;
 use scraping::contests::update_contests;
 use scraping::get_ranking::get_ranking;
 use scraping::get_submission::get_submission;
+use scraping::get_user_list;
 use sha2::Digest;
 use std::sync::Arc;
 use std::thread;
@@ -79,6 +80,7 @@ async fn interval(ctx: serenity::Context) {
             );
             update_contests(&pool).await;
             send_message::send_notify(&pool, &ctx).await;
+            get_user_list::user_list_update(&pool).await;
             log::info!("日ごとの処理終了");
             date = now.date_naive();
         } else if last_minute != now.minute() {
