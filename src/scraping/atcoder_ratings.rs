@@ -8,7 +8,6 @@ use serde_json;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
