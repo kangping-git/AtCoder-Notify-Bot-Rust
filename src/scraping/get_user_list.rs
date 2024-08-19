@@ -17,28 +17,13 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>) {
     let mut user_heuristic_history: BTreeMap<String, Vec<(i32, i32, String)>> = BTreeMap::new();
     let mut user_set = HashSet::new();
     for i in list {
-        let is_algo: bool = i.5 == 0;
         user_set.insert(i.4.clone());
-        let pointer: &BTreeMap<String, Vec<(i32, i32, String)>> = if is_algo { &user_algo_history } else { &user_heuristic_history };
-        if pointer.contains_key(&i.4) {
-            let mut vec = pointer.get(&i.4).unwrap().clone();
-            let data = (i.1, i.2, i.3);
-            vec.push(data);
-            if is_algo {
-                user_algo_history.insert(i.4, vec);
-            } else {
-                user_heuristic_history.insert(i.4, vec);
-            }
+        let history = if i.5 == 0 {
+            user_algo_history.entry(i.4.clone()).or_default()
         } else {
-            let mut vec = vec![];
-            let data = (i.1, i.2, i.3);
-            vec.push(data);
-            if is_algo {
-                user_algo_history.insert(i.4, vec);
-            } else {
-                user_heuristic_history.insert(i.4, vec);
-            }
-        }
+            user_heuristic_history.entry(i.4.clone()).or_default()
+        };
+        history.push((i.1, i.2, i.3));
     }
     log::info!("add to BTreeMap: {:?}", start_time.elapsed());
     let contests: Vec<(String, String)> = conn.query("select contest_id,start_time from contests").unwrap();
