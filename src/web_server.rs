@@ -219,7 +219,7 @@ async fn default_handler(req_method: Method) -> Result<impl Responder> {
 
 #[actix_web::main]
 pub async fn start() {
-    dotenv::dotenv().unwrap();
+    dotenvy::dotenv().unwrap();
 
     log::info!("Web Server Service");
     let url = format!(

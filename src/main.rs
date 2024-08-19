@@ -11,9 +11,9 @@ use commands::contests::create_contest_response;
 use commands::contests::Contest;
 use init::init_logger;
 
-use mysql::*;
-use mysql::prelude::*;
 use chrono::Timelike;
+use mysql::prelude::*;
+use mysql::*;
 use poise::serenity_prelude::ActivityData;
 use poise::serenity_prelude::CreateActionRow;
 use poise::serenity_prelude::CreateButton;
@@ -36,7 +36,7 @@ use web_server::start;
 
 use commands::atcoder;
 use commands::server;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use scraping::login;
 
@@ -196,8 +196,8 @@ async fn main() {
                             CreateButton::new(format!("goto_{}",page-1))
                                 .label("<")
                                 .style(poise::serenity_prelude::ButtonStyle::Primary);
-                            let mut prev = 
-                            CreateButton::new(format!("goto_{}",page+1))
+                            let mut prev =
+                                                        CreateButton::new(format!("goto_{}",page+1))
                                 .label(">")
                                 .style(poise::serenity_prelude::ButtonStyle::Primary);
                             
@@ -219,7 +219,6 @@ async fn main() {
                             .await;
                             let reply = CreateInteractionResponse::UpdateMessage(CreateInteractionResponseMessage::default().add_file(attachment).components(components));
                             interaction.create_response(&ctx.http,reply).await?;
-                        
                         }
                     }
                     Ok(())
