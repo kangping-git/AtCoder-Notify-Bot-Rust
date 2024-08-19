@@ -361,7 +361,7 @@ pub async fn get_ranking(
 
                         users_list.push(RatingType::UserRating(create_table::UserRating {
                             username: users.UserScreenName.clone(),
-                            contest_type: match i.rating_type {
+                            contest_type: match i.contest_type {
                                 0 => super::contest_type::ContestType::Algorithm,
                                 _ => super::contest_type::ContestType::Heuristic,
                             },

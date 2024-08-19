@@ -5,30 +5,28 @@ use crate::{Context, Error};
 use chrono::{DateTime, FixedOffset};
 use mysql::prelude::*;
 use mysql::*;
-use poise::serenity_prelude::{
-    ComponentInteractionCollector, CreateActionRow, CreateAttachment, CreateButton,
-};
+use poise::serenity_prelude::{CreateActionRow, CreateAttachment, CreateButton};
 use poise::CreateReply;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[derive(Debug)]
-struct Contest {
-    start_time: DateTime<FixedOffset>,
-    end_time: DateTime<FixedOffset>,
-    contest_type: ContestType,
-    rating_type: ContestRatingType,
-    name: String,
-    rating_raw: String,
+pub struct Contest {
+    pub start_time: DateTime<FixedOffset>,
+    pub end_time: DateTime<FixedOffset>,
+    pub contest_type: ContestType,
+    pub rating_type: ContestRatingType,
+    pub name: String,
+    pub rating_raw: String,
 }
 
-async fn create_contest_response(
+pub async fn create_contest_response(
     title: &str,
     pool: Pool,
     contests: Vec<&Contest>,
     components: Vec<CreateActionRow>,
     start_no: i32,
-) -> CreateReply {
+) -> (Vec<CreateActionRow>, CreateAttachment) {
     let mut counts: Vec<TextConfig> = vec![];
     let mut contest_type: Vec<TextConfig> = vec![];
     let mut contest_rating_type: Vec<TextConfig> = vec![];
@@ -117,10 +115,7 @@ async fn create_contest_response(
         ),
         "contests.png",
     );
-    CreateReply::default()
-        .components(components)
-        .attachment(attachment)
-        .ephemeral(true)
+    (components, attachment)
 }
 
 fn ordinal_suffix(n: i32) -> String {
@@ -186,9 +181,13 @@ async fn upcoming(ctx: Context<'_>) -> Result<(), Error> {
         .collect();
     contests.sort_by(|a, b| a.end_time.partial_cmp(&(b.end_time)).unwrap());
 
-    let reply =
+    let (components, attachment) =
         create_contest_response("upcoming contests", pool.clone(), contests, vec![], 0).await;
 
+    let reply = CreateReply::default()
+        .components(components)
+        .attachment(attachment)
+        .ephemeral(true);
     ctx.send(reply).await?;
 
     Ok(())
@@ -240,8 +239,13 @@ async fn current(ctx: Context<'_>) -> Result<(), Error> {
         .collect();
     contests.sort_by(|a, b| a.end_time.partial_cmp(&(b.end_time)).unwrap());
 
-    let reply =
+    let (components, attachment) =
         create_contest_response("current contests", pool.clone(), contests, vec![], 0).await;
+
+    let reply = CreateReply::default()
+        .components(components)
+        .attachment(attachment)
+        .ephemeral(true);
 
     ctx.send(reply).await?;
 
@@ -294,16 +298,16 @@ async fn past(ctx: Context<'_>) -> Result<(), Error> {
     contests.sort_by(|a, b| b.end_time.partial_cmp(&(a.end_time)).unwrap());
 
     let components = vec![CreateActionRow::Buttons(vec![
-        CreateButton::new("prev")
+        CreateButton::new("goto_0")
             .label("<")
             .style(poise::serenity_prelude::ButtonStyle::Primary)
             .disabled(true),
-        CreateButton::new("next")
+        CreateButton::new("goto_1")
             .label(">")
             .style(poise::serenity_prelude::ButtonStyle::Primary),
     ])];
 
-    let reply = create_contest_response(
+    let (components, attachment) = create_contest_response(
         "past contests (page 1)",
         pool.clone(),
         contests[0..20].to_vec(),
@@ -312,44 +316,12 @@ async fn past(ctx: Context<'_>) -> Result<(), Error> {
     )
     .await;
 
+    let reply = CreateReply::default()
+        .components(components)
+        .attachment(attachment)
+        .ephemeral(true);
+
     ctx.send(reply).await?;
 
-    let mut page = 0;
-
-    while let Some(mci) = ComponentInteractionCollector::new(ctx.serenity_context())
-        .timeout(std::time::Duration::from_secs(360))
-        .filter(move |mci| mci.data.custom_id == "next" || mci.data.custom_id == "prev")
-        .await
-    {
-        if mci.data.custom_id == "next" {
-            page += 1
-        } else {
-            page -= 1
-        }
-        let mut prev_button = CreateButton::new("prev")
-            .label("<")
-            .style(poise::serenity_prelude::ButtonStyle::Primary);
-        let mut next_button = CreateButton::new("next")
-            .label(">")
-            .style(poise::serenity_prelude::ButtonStyle::Primary);
-        if page == 0 {
-            prev_button = prev_button.disabled(true);
-        } else if page * 20 + 20 >= contests.len() {
-            next_button = next_button.disabled(true);
-        }
-        let components = vec![CreateActionRow::Buttons(vec![prev_button, next_button])];
-
-        let reply = create_contest_response(
-            &format!("past contests (page {})", page + 1),
-            pool.clone(),
-            contests[(page * 20)..(page * 20 + 20)].to_vec(),
-            components,
-            (page * 20) as i32,
-        )
-        .await;
-
-        ctx.send(reply).await?;
-        mci.defer(ctx.http()).await?;
-    }
     Ok(())
 }
