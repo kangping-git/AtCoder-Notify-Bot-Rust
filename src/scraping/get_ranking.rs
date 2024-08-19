@@ -1,7 +1,5 @@
 use crate::utils::{
-    svg::create_table::{
-        self, Align, RatingCustom, RatingType, Row, TableRowsRating, TableRowsText, TextConfig,
-    },
+    svg::create_table::{self, Align, RatingCustom, RatingType, Row, TableRowsRating, TableRowsText, TextConfig},
     svg_to_png::svg_to_png,
 };
 use serde_json;
@@ -13,9 +11,7 @@ use std::{
 
 use mysql::prelude::*;
 use mysql::*;
-use poise::serenity_prelude::{
-    self as serenity, ChannelId, CreateAttachment, CreateMessage, EditMessage,
-};
+use poise::serenity_prelude::{self as serenity, ChannelId, CreateAttachment, CreateMessage, EditMessage};
 use reqwest::{blocking::Client, cookie::Jar};
 use tokio::sync::Mutex;
 
@@ -64,11 +60,7 @@ fn g(x: f64) -> f64 {
     2.0_f64.powf(x / 800.0)
 }
 
-pub async fn get_ranking(
-    pool: &Arc<Mutex<Pool>>,
-    cookie_store: &Arc<Jar>,
-    ctx: &serenity::Context,
-) {
+pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: &serenity::Context) {
     let mut memo_data = Clone::clone(MEMO.get_or_init(|| {
         let map: BTreeMap<Float, f64> = BTreeMap::new();
         map
@@ -78,22 +70,21 @@ pub async fn get_ranking(
     let contests: Vec<Contest> = conn
         .query_map(
             "select contest_id,start_time,duration,contest_type,rating_type,name,rating_range_end from contests",
-            |(contest_id, start_time, duration, contest_type, rating_type, name,rating_range_end)| Contest {
+            |(contest_id, start_time, duration, contest_type, rating_type, name, rating_range_end)| Contest {
                 contest_id,
                 start_time,
                 duration,
                 contest_type,
                 rating_type,
-                name,rating_range_end
+                name,
+                rating_range_end,
             },
         )
         .unwrap();
     let contests: Vec<&Contest> = contests
         .iter()
         .filter(|contest| {
-            let start_time =
-                chrono::DateTime::parse_from_str(&contest.start_time, "%Y-%m-%d %H:%M:%S%z")
-                    .unwrap();
+            let start_time = chrono::DateTime::parse_from_str(&contest.start_time, "%Y-%m-%d %H:%M:%S%z").unwrap();
             let offset = chrono::Duration::minutes(contest.duration as i64);
             let end_time = start_time + offset;
             start_time <= chrono::Local::now() && chrono::Local::now() <= end_time
@@ -113,61 +104,40 @@ pub async fn get_ranking(
     let mut contest_message_map: BTreeMap<String, Vec<Message>> = BTreeMap::new();
     for i in messages {
         let message = i.clone();
-        let mut vec = contest_message_map
-            .remove(&i.contest_id)
-            .unwrap_or_default();
+        let mut vec = contest_message_map.remove(&i.contest_id).unwrap_or_default();
         vec.push(message);
         contest_message_map.insert(i.contest_id, vec);
     }
 
     let users = conn
-        .query_map(
-            "SELECT atcoder_username, server_id from users",
-            |(atcoder_username, server_id)| User {
-                atcoder_username,
-                server_id,
-            },
-        )
+        .query_map("SELECT atcoder_username, server_id from users", |(atcoder_username, server_id)| User {
+            atcoder_username,
+            server_id,
+        })
         .unwrap();
     let mut contest_users_map: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
     for user in users {
         let user = user.clone();
-        let mut vec = contest_users_map
-            .remove(&user.server_id.to_string())
-            .unwrap_or_default();
+        let mut vec = contest_users_map.remove(&user.server_id.to_string()).unwrap_or_default();
         vec.insert(user.atcoder_username.to_lowercase());
         contest_users_map.insert(user.server_id.to_string(), vec);
     }
 
-    let channels: Vec<(String, String)> = conn
-        .query("SELECT contest_channel_id,server_id FROM notifications")
-        .unwrap();
+    let channels: Vec<(String, String)> = conn.query("SELECT contest_channel_id,server_id FROM notifications").unwrap();
 
-    let users: Vec<(String, f64, f64, i32, i32)> = conn
-        .query("SELECT user_name,algo_aperf,heuristic_aperf,algo_contests,heuristic_contests FROM atcoder_user_ratings")
-        .unwrap();
+    let users: Vec<(String, f64, f64, i32, i32)> =
+        conn.query("SELECT user_name,algo_aperf,heuristic_aperf,algo_contests,heuristic_contests FROM atcoder_user_ratings").unwrap();
     let users_to_aperf: BTreeMap<String, (f64, f64, i32, i32)> = users
         .iter()
-        .map(
-            |(user_name, algo_aperf, heuristic_aperf, algo_contests, heuristic_contests)| {
-                (
-                    user_name.clone().to_lowercase(),
-                    (
-                        *algo_aperf,
-                        *heuristic_aperf,
-                        *algo_contests,
-                        *heuristic_contests,
-                    ),
-                )
-            },
-        )
+        .map(|(user_name, algo_aperf, heuristic_aperf, algo_contests, heuristic_contests)| {
+            (
+                user_name.clone().to_lowercase(),
+                (*algo_aperf, *heuristic_aperf, *algo_contests, *heuristic_contests),
+            )
+        })
         .collect();
 
-    let client = Client::builder()
-        .cookie_store(true)
-        .cookie_provider(Arc::clone(cookie_store))
-        .build()
-        .unwrap();
+    let client = Client::builder().cookie_store(true).cookie_provider(Arc::clone(cookie_store)).build().unwrap();
     for i in &contests {
         let url = format!("https://{}/standings/json", i.contest_id);
         let json = client.get(url).send().unwrap().text().unwrap_or_default();
@@ -175,9 +145,7 @@ pub async fn get_ranking(
         let empty_set: BTreeSet<String> = BTreeSet::new();
         for (channel_id, server_id) in &channels {
             if channel_id != "null" {
-                let user_list = contest_users_map
-                    .get(server_id)
-                    .unwrap_or(Clone::clone(&&empty_set));
+                let user_list = contest_users_map.get(server_id).unwrap_or(Clone::clone(&&empty_set));
                 let mut ranks = vec![];
                 let mut server_ranks = vec![];
                 let mut users_list = vec![];
@@ -214,8 +182,7 @@ pub async fn get_ranking(
                             last_rank = users.Rank;
                             rank_people = 0;
                         }
-                        let mut rank = (*rank_map.get(&users.Rank).unwrap() as f64)
-                            + ((rank_people_map.get(&users.Rank).unwrap() - 1) as f64) / 2.0;
+                        let mut rank = (*rank_map.get(&users.Rank).unwrap() as f64) + ((rank_people_map.get(&users.Rank).unwrap() - 1) as f64) / 2.0;
                         if rank_people_map.get(&users.Rank).unwrap() == &0 {
                             rank = *rank_map.get(&users.Rank).unwrap() as f64;
                         }
@@ -228,13 +195,11 @@ pub async fn get_ranking(
                             if !contains_key {
                                 for j in &data.StandingsData {
                                     if j.IsRated {
-                                        let aperf = users_to_aperf
-                                            .get(&j.UserScreenName.to_lowercase())
-                                            .unwrap_or(match i.rating_type {
-                                                2 => &(1200.0, 1200.0, 0, 0),
-                                                1 => &(1000.0, 1000.0, 0, 0),
-                                                _ => &(800.0, 800.0, 0, 0),
-                                            });
+                                        let aperf = users_to_aperf.get(&j.UserScreenName.to_lowercase()).unwrap_or(match i.rating_type {
+                                            2 => &(1200.0, 1200.0, 0, 0),
+                                            1 => &(1000.0, 1000.0, 0, 0),
+                                            _ => &(800.0, 800.0, 0, 0),
+                                        });
                                         let aperf = match i.contest_type {
                                             0 => match aperf.2 {
                                                 0 => match i.rating_type {
@@ -275,7 +240,8 @@ pub async fn get_ranking(
                             perf = i.rating_range_end as f64 + 401.0
                         }
 
-                        let performance_list:Vec<i32> = conn.exec(
+                        let performance_list: Vec<i32> = conn
+                            .exec(
                                 "SELECT
                                            LEAST(contests.rating_range_end + 401,user_ratings.performance)
                                        FROM
@@ -290,7 +256,8 @@ pub async fn get_ranking(
                                     "user_name" => &users.UserScreenName,
                                     "type" => i.contest_type
                                 },
-                            ).unwrap();
+                            )
+                            .unwrap();
                         let mut up = 0.9 * 2.0 * g(perf);
                         let mut down = 0.9;
                         let mut count = 2;
@@ -300,9 +267,8 @@ pub async fn get_ranking(
                             count += 1;
                         }
                         let mut rate = f64::log2(up / down) * 800.0
-                            - ((f64::sqrt(
-                                1.0 - 0.81_f64.powi((performance_list.len() + 1) as i32),
-                            ) / (1.0 - 0.9_f64.powi((performance_list.len() + 1) as i32)))
+                            - ((f64::sqrt(1.0 - 0.81_f64.powi((performance_list.len() + 1) as i32))
+                                / (1.0 - 0.9_f64.powi((performance_list.len() + 1) as i32)))
                                 - 1.0)
                                 / (f64::sqrt(19.0) - 1.0)
                                 * 1200.0;
@@ -408,34 +374,19 @@ pub async fn get_ranking(
                         data: rate_diff_list,
                     }),
                 ];
-                let svg = create_table::create_table(
-                    &Arc::new(Mutex::new(pool_temp.clone())),
-                    format!("{} サーバー内ランキング", i.name),
-                    rows,
-                )
-                .await;
+                let svg = create_table::create_table(&Arc::new(Mutex::new(pool_temp.clone())), format!("{} サーバー内ランキング", i.name), rows).await;
                 let channel = ChannelId::new(channel_id.parse::<u64>().unwrap());
                 let response = {
                     let mut message = CreateMessage::new();
                     message = message.add_file(CreateAttachment::bytes(
-                        svg_to_png(
-                            svg.svg.as_str(),
-                            svg.width as u32,
-                            svg.height as u32,
-                            1.0,
-                            1.0,
-                        ),
+                        svg_to_png(svg.svg.as_str(), svg.width as u32, svg.height as u32, 1.0, 1.0),
                         "ranking.png",
                     ));
                     message
                 };
                 if contest_message_map.contains_key(&i.contest_id) {
-                    let message_id: Vec<&Message> = contest_message_map
-                        .get(&i.contest_id)
-                        .unwrap()
-                        .iter()
-                        .filter(|x| x.channel_id.to_string() == channel_id.clone())
-                        .collect();
+                    let message_id: Vec<&Message> =
+                        contest_message_map.get(&i.contest_id).unwrap().iter().filter(|x| x.channel_id.to_string() == channel_id.clone()).collect();
                     if !message_id.is_empty() {
                         let channel = ChannelId::new(message_id[0].channel_id as u64);
                         let _ = channel
@@ -443,13 +394,7 @@ pub async fn get_ranking(
                                 ctx.http.clone(),
                                 message_id[0].message_id as u64,
                                 EditMessage::default().new_attachment(CreateAttachment::bytes(
-                                    svg_to_png(
-                                        svg.svg.as_str(),
-                                        svg.width as u32,
-                                        svg.height as u32,
-                                        1.0,
-                                        1.0,
-                                    ),
+                                    svg_to_png(svg.svg.as_str(), svg.width as u32, svg.height as u32, 1.0, 1.0),
                                     "ranking.png",
                                 )),
                             )
@@ -459,13 +404,14 @@ pub async fn get_ranking(
                     let message = channel.send_message(&ctx.http, response).await;
                     if let Ok(message_id) = message {
                         conn.exec_drop(
-                                "INSERT INTO messages (contest_id, channel_id, message_id) VALUES (:contest_id, :channel_id, :message_id)",
-                                params! {
-                                    "contest_id" => &i.contest_id,
-                                    "channel_id" => channel_id.parse::<i64>().unwrap(),
-                                    "message_id" => message_id.id.get() as i64
-                                },
-                            ).unwrap();
+                            "INSERT INTO messages (contest_id, channel_id, message_id) VALUES (:contest_id, :channel_id, :message_id)",
+                            params! {
+                                "contest_id" => &i.contest_id,
+                                "channel_id" => channel_id.parse::<i64>().unwrap(),
+                                "message_id" => message_id.id.get() as i64
+                            },
+                        )
+                        .unwrap();
                     }
                 }
             }

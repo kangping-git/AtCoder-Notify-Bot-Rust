@@ -34,10 +34,46 @@ pub async fn rating(_ctx: Context<'_>) -> Result<(), Error> {
 #[poise::command(prefix_command, slash_command)]
 pub async fn now(
     ctx: Context<'_>,
-    #[description = "atcoder_user"] atcoder_user: String,
     #[description = "contest_type"] contest_type: AtCoderContestType,
+    #[description = "atcoder_user"] atcoder_user: Option<String>,
 ) -> Result<(), Error> {
     let pool = ctx.data().conn.lock().await;
+    let mut conn = pool.get_conn().unwrap();
+    let guild_id = ctx.guild_id().unwrap().to_string().parse::<i64>().unwrap();
+    let users: Vec<String> = conn
+        .exec(
+            "SELECT atcoder_username FROM users WHERE discord_id=:discord_id AND server_id=:server_id",
+            params! {"discord_id" => ctx.author().id.to_string().parse::<u64>().unwrap(),
+            "server_id" => guild_id},
+        )
+        .unwrap();
+
+    let selected_data: Vec<String> = conn.exec(
+        r"SELECT language FROM server_settings WHERE server_id=:server_id",
+        params! {"server_id" => guild_id},
+    )?;
+    let mut lang = "ja";
+    if selected_data.len() == 1 {
+        lang = selected_data[0].as_str();
+    }
+
+    if users.is_empty() {
+        if lang == "ja" {
+            let response =
+                CreateReply::default().content("AtCoderアカウントがリンクされていません。`link`コマンドを使用してAtCoderアカウントをリンクしてください。");
+            ctx.send(response).await?;
+        } else {
+            let response =
+                CreateReply::default().content("You have not linked your AtCoder account yet. Please use the `link` command to link your AtCoder account.");
+            ctx.send(response).await?;
+        }
+        return Ok(());
+    }
+
+    let atcoder_user = match atcoder_user {
+        Some(atcoder_user) => atcoder_user,
+        None => users[0].clone(),
+    };
 
     let response = {
         let contest_type: ContestType = match contest_type {
@@ -45,34 +81,14 @@ pub async fn now(
             AtCoderContestType::Heuristic => ContestType::Heuristic,
         };
         let pool: &Pool = &pool.clone();
-        let svg_data = CreateUserRating::from_user(
-            &Arc::new(Mutex::new(pool.clone())),
-            atcoder_user,
-            contest_type,
-            0,
-            0,
-        )
-        .await;
+        let svg_data = CreateUserRating::from_user(&Arc::new(Mutex::new(pool.clone())), atcoder_user, contest_type, 0, 0).await;
         let mut tmpl = Tera::default();
-        tmpl.add_raw_template(
-            "user_rating.svg",
-            include_str!("../../static/img/user_rating.svg"),
-        )
-        .unwrap();
+        tmpl.add_raw_template("user_rating.svg", include_str!("../../static/img/user_rating.svg")).unwrap();
         let mut ctx = tera::Context::new();
-        ctx.insert(
-            "main",
-            &format!("{}{}", &svg_data.circle_svg, &svg_data.text_svg),
-        );
+        ctx.insert("main", &format!("{}{}", &svg_data.circle_svg, &svg_data.text_svg));
         ctx.insert("gradient", &svg_data.gradient_svg);
         CreateReply::default().attachment(CreateAttachment::bytes(
-            svg_to_png(
-                &tmpl.render("user_rating.svg", &ctx).unwrap_or_default(),
-                1336,
-                100,
-                1.0,
-                1.0,
-            ),
+            svg_to_png(&tmpl.render("user_rating.svg", &ctx).unwrap_or_default(), 1336, 100, 1.0, 1.0),
             "rating.png",
         ))
     };
@@ -86,11 +102,46 @@ pub async fn now(
 #[poise::command(prefix_command, slash_command, rename = "history")]
 pub async fn rating_history(
     ctx: Context<'_>,
-    #[description = "atcoder_user_list"] atcoder_user_list: String,
+    #[description = "atcoder_user_list"] atcoder_user_list: Option<String>,
     #[description = "contest_type"] contest_type: AtCoderContestType,
 ) -> Result<(), Error> {
     let pool = ctx.data().conn.lock().await;
     let mut conn = pool.get_conn().unwrap();
+    let guild_id = ctx.guild_id().unwrap().to_string().parse::<i64>().unwrap();
+    let users: Vec<String> = conn
+        .exec(
+            "SELECT atcoder_username FROM users WHERE discord_id=:discord_id AND server_id=:server_id",
+            params! {"discord_id" => ctx.author().id.to_string().parse::<u64>().unwrap(),
+            "server_id" => guild_id},
+        )
+        .unwrap();
+
+    let selected_data: Vec<String> = conn.exec(
+        r"SELECT language FROM server_settings WHERE server_id=:server_id",
+        params! {"server_id" => guild_id},
+    )?;
+    let mut lang = "ja";
+    if selected_data.len() == 1 {
+        lang = selected_data[0].as_str();
+    }
+
+    if users.is_empty() {
+        if lang == "ja" {
+            let response =
+                CreateReply::default().content("AtCoderアカウントがリンクされていません。`link`コマンドを使用してAtCoderアカウントをリンクしてください。");
+            ctx.send(response).await?;
+        } else {
+            let response =
+                CreateReply::default().content("You have not linked your AtCoder account yet. Please use the `link` command to link your AtCoder account.");
+            ctx.send(response).await?;
+        }
+        return Ok(());
+    }
+
+    let atcoder_user_list = match atcoder_user_list {
+        Some(atcoder_user_list) => atcoder_user_list,
+        None => users[0].clone(),
+    };
     let bg_colors = [
         RGBColor(216, 216, 216),
         RGBColor(216, 197, 178),
@@ -122,19 +173,14 @@ pub async fn rating_history(
         let image_height = 720;
         let mut buffer: Vec<u8> = vec![0; image_width * image_height * 3];
         {
-            let root = BitMapBackend::<RGBPixel>::with_buffer(
-                &mut buffer,
-                (image_width as u32, image_height as u32),
-            )
-            .into_drawing_area();
+            let root = BitMapBackend::<RGBPixel>::with_buffer(&mut buffer, (image_width as u32, image_height as u32)).into_drawing_area();
 
             root.fill(&WHITE)?;
 
             let mut y_min = 99999999;
             let mut y_max = 0;
             let mut x_min = chrono::Utc::now().into();
-            let x_max =
-                chrono::DateTime::parse_from_str("2015-04-11 21:00:00+0900", "%Y-%m-%d %H:%M:%S%z");
+            let x_max = chrono::DateTime::parse_from_str("2015-04-11 21:00:00+0900", "%Y-%m-%d %H:%M:%S%z");
             let mut x_max = x_max.unwrap();
 
             let caption = "Rating History";
@@ -164,23 +210,18 @@ pub async fn rating_history(
                 let mut xs = vec![];
                 let mut ys = vec![];
                 for i in atcoder_rating {
-                    let start_time =
-                        chrono::DateTime::parse_from_str(&i.1, "%Y-%m-%d %H:%M:%S%z").unwrap();
+                    let start_time = chrono::DateTime::parse_from_str(&i.1, "%Y-%m-%d %H:%M:%S%z").unwrap();
                     let offset = chrono::Duration::minutes(i.2 as i64);
                     xs.push(start_time + offset);
                     ys.push(i.0);
                 }
 
-                let (y_min_temp, y_max_temp) = ys.iter().fold((ys[0], ys[0]), |(m, n), v| {
-                    (std::cmp::min(*v, m), std::cmp::max(*v, n))
-                });
+                let (y_min_temp, y_max_temp) = ys.iter().fold((ys[0], ys[0]), |(m, n), v| (std::cmp::min(*v, m), std::cmp::max(*v, n)));
                 let y_min_temp = y_min_temp / 400 * 400;
                 let y_min_temp = std::cmp::max(0, y_min_temp - 50);
                 let y_max_temp = y_max_temp / 400 * 400 + 450;
-                let x_min_temp =
-                    *xs.first().unwrap() - (*xs.last().unwrap() - *xs.first().unwrap()) / 20;
-                let x_max_temp =
-                    *xs.last().unwrap() + (*xs.last().unwrap() - *xs.first().unwrap()) / 20;
+                let x_min_temp = *xs.first().unwrap() - (*xs.last().unwrap() - *xs.first().unwrap()) / 20;
+                let x_max_temp = *xs.last().unwrap() + (*xs.last().unwrap() - *xs.first().unwrap()) / 20;
 
                 y_min = std::cmp::min(y_min, y_min_temp);
                 y_max = std::cmp::max(y_max, y_max_temp);
@@ -195,14 +236,7 @@ pub async fn rating_history(
                                 + Circle::new(
                                     (0, 0),
                                     6,
-                                    ShapeStyle::from(
-                                        &circle_bg_colors[std::cmp::min(
-                                            y / 400,
-                                            (circle_bg_colors.len() - 1) as i32,
-                                        )
-                                            as usize],
-                                    )
-                                    .filled(),
+                                    ShapeStyle::from(&circle_bg_colors[std::cmp::min(y / 400, (circle_bg_colors.len() - 1) as i32) as usize]).filled(),
                                 )
                                 + Circle::new((0, 0), 6, WHITE.stroke_width(2))
                         })
@@ -214,20 +248,14 @@ pub async fn rating_history(
                         .zip(ys.iter())
                         .map(|(x, y)| {
                             EmptyElement::at((*x, *y))
-                                + Circle::new(
-                                    (0, 0),
-                                    6,
-                                    HSLColor(idx as f64 / user_list.len() as f64, 1.0, 0.5)
-                                        .filled(),
-                                )
+                                + Circle::new((0, 0), 6, HSLColor(idx as f64 / user_list.len() as f64, 1.0, 0.5).filled())
                                 + Circle::new((0, 0), 6, TRANSPARENT)
                         })
                         .collect::<Vec<_>>();
                     point_series_vec.push(point_series);
                 };
                 if user_list.len() == 1 {
-                    let line_series =
-                        LineSeries::new(xs.iter().zip(ys.iter()).map(|(x, y)| (*x, *y)), GREY_800);
+                    let line_series = LineSeries::new(xs.iter().zip(ys.iter()).map(|(x, y)| (*x, *y)), GREY_800);
                     line_series_vec.push(line_series);
                 } else {
                     let line_series = LineSeries::new(
@@ -244,10 +272,7 @@ pub async fn rating_history(
                 .x_label_area_size(32)
                 .y_label_area_size(84)
                 .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
-            chart
-                .configure_mesh()
-                .x_label_formatter(&|x: &DateTime<FixedOffset>| x.format("%Y/%m/%d").to_string())
-                .draw()?;
+            chart.configure_mesh().x_label_formatter(&|x: &DateTime<FixedOffset>| x.format("%Y/%m/%d").to_string()).draw()?;
 
             chart.draw_series((0..8).map(|index: i32| {
                 Rectangle::new(
@@ -266,10 +291,7 @@ pub async fn rating_history(
             }))?;
             for i in 0..100 {
                 chart.draw_series(LineSeries::new(
-                    [
-                        (x_min - (x_max - x_min) / 20, 400 * i),
-                        (x_max + (x_max - x_min) / 20, 400 * i),
-                    ],
+                    [(x_min - (x_max - x_min) / 20, 400 * i), (x_max + (x_max - x_min) / 20, 400 * i)],
                     WHITE,
                 ))?;
             }
@@ -278,29 +300,20 @@ pub async fn rating_history(
                 let idx_clone = idx;
                 let user_name = user_list[idx];
                 let user_list_clone = user_list.clone();
-                chart
-                    .draw_series(data)?
-                    .label(user_name)
-                    .legend(move |(x, y)| {
-                        PathElement::new(
-                            vec![(x, y), (x + 20, y)],
-                            HSLColor(idx_clone as f64 / user_list_clone.len() as f64, 1.0, 0.5), // Use the cloned user_list
-                        )
-                    });
+                chart.draw_series(data)?.label(user_name).legend(move |(x, y)| {
+                    PathElement::new(
+                        vec![(x, y), (x + 20, y)],
+                        HSLColor(idx_clone as f64 / user_list_clone.len() as f64, 1.0, 0.5), // Use the cloned user_list
+                    )
+                });
             }
             for i in point_series_vec {
                 chart.draw_series(i)?;
             }
-            chart
-                .configure_series_labels()
-                .border_style(BLACK)
-                .background_style(WHITE.mix(0.8))
-                .draw()
-                .unwrap();
+            chart.configure_series_labels().border_style(BLACK).background_style(WHITE.mix(0.8)).draw().unwrap();
         }
 
-        let img: RgbImage = ImageBuffer::from_raw(image_width as u32, image_height as u32, buffer)
-            .expect("Failed to create image buffer");
+        let img: RgbImage = ImageBuffer::from_raw(image_width as u32, image_height as u32, buffer).expect("Failed to create image buffer");
 
         let mut png_data = Vec::new();
         {

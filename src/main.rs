@@ -117,56 +117,29 @@ async fn main() {
             commands: vec![atcoder::atcoder(), server::server()],
             on_error: |error| {
                 Box::pin(async move {
-                    error
-                        .ctx()
-                        .unwrap()
-                        .say("エラーが発生しました。")
-                        .await
-                        .unwrap();
+                    error.ctx().unwrap().say("エラーが発生しました。").await.unwrap();
                 })
             },
             event_handler: |ctx, event, _framework, data| {
                 Box::pin(async move {
-                    if let serenity::FullEvent::Message {
-                        new_message: message,
-                    } = event
-                    {
+                    if let serenity::FullEvent::Message { new_message: message } = event {
                         println!("{}", message.content);
-                        if format!("{:x}", sha2::Sha256::digest(&message.content))
-                            == "a69893e03d93e1e4d0f66dd41e9df574b70d8f3281ef499eaf04e0437d3cad17"
-                        {
-                            message
-                                .reply(
-                                    &ctx.http,
-                                    std::env::var("SEACRET_COMMAND_OUTPUT")
-                                        .unwrap_or("** **".to_string()),
-                                )
-                                .await
-                                .unwrap_or_default();
+                        if format!("{:x}", sha2::Sha256::digest(&message.content)) == "a69893e03d93e1e4d0f66dd41e9df574b70d8f3281ef499eaf04e0437d3cad17" {
+                            message.reply(&ctx.http, std::env::var("SEACRET_COMMAND_OUTPUT").unwrap_or("** **".to_string())).await.unwrap_or_default();
                         }
                     } else if let serenity::FullEvent::InteractionCreate {
                         interaction: serenity::Interaction::Component(interaction),
                     } = event
                     {
                         if interaction.data.custom_id.starts_with("goto_") {
-                            let page = 
-                            interaction.data.custom_id[5..].parse::<usize>().unwrap();
+                            let page = interaction.data.custom_id[5..].parse::<usize>().unwrap();
                             let pool = data.conn.lock().await;
                             let mut conn = pool.get_conn().unwrap();
-                        
                             let contests: Vec<Contest> = conn
                                 .query_map(
                                     "select start_time,duration,contest_type,rating_type,name,rating_range_raw from contests",
-                                    |(start_time, duration, contest_type, rating_type, name,rating_raw): (
-                        
-                                        String,
-                                        i64,
-                                        i8,
-                                        i8,
-                                        String,String
-                                    )| {
-                                        let start_time =
-                                            chrono::DateTime::parse_from_str(&start_time, "%Y-%m-%d %H:%M:%S%z").unwrap();
+                                    |(start_time, duration, contest_type, rating_type, name, rating_raw): (String, i64, i8, i8, String, String)| {
+                                        let start_time = chrono::DateTime::parse_from_str(&start_time, "%Y-%m-%d %H:%M:%S%z").unwrap();
                                         let offset = chrono::Duration::minutes(duration);
                                         Contest {
                                             start_time,
@@ -181,44 +154,35 @@ async fn main() {
                                                 2 => ContestRatingType::AGC,
                                                 _ => ContestRatingType::None,
                                             },
-                                            name,rating_raw
+                                            name,
+                                            rating_raw,
                                         }
                                     },
                                 )
                                 .unwrap();
-                            let mut contests: Vec<&Contest> = contests
-                                .iter()
-                                .filter(|contest| chrono::Local::now() >= contest.start_time)
-                                .collect();
+                            let mut contests: Vec<&Contest> = contests.iter().filter(|contest| chrono::Local::now() >= contest.start_time).collect();
                             contests.sort_by(|a, b| b.end_time.partial_cmp(&(a.end_time)).unwrap());
-                            
-                            let mut next = 
-                            CreateButton::new(format!("goto_{}",page-1))
-                                .label("<")
-                                .style(poise::serenity_prelude::ButtonStyle::Primary);
-                            let mut prev =
-                                                        CreateButton::new(format!("goto_{}",page+1))
-                                .label(">")
-                                .style(poise::serenity_prelude::ButtonStyle::Primary);
-                            
-                            if page == 0{
+                            let mut next = CreateButton::new(format!("goto_{}", page - 1)).label("<").style(poise::serenity_prelude::ButtonStyle::Primary);
+                            let mut prev = CreateButton::new(format!("goto_{}", page + 1)).label(">").style(poise::serenity_prelude::ButtonStyle::Primary);
+                            if page == 0 {
                                 next = next.disabled(true)
                             }
-                            if page == contests.len()/20{
+                            if page == contests.len() / 20 {
                                 prev = prev.disabled(true)
                             }
-
-                            let components = vec![CreateActionRow::Buttons(vec![next,prev])];
-                            let (components,attachment) = create_contest_response(
-                                format!("past contests (page {})",page+1).as_str(),
+                            let components = vec![CreateActionRow::Buttons(vec![next, prev])];
+                            let (components, attachment) = create_contest_response(
+                                format!("past contests (page {})", page + 1).as_str(),
                                 pool.clone(),
-                                contests[page*20..std::cmp::min(page*20+20,contests.len())].to_vec(),
+                                contests[page * 20..std::cmp::min(page * 20 + 20, contests.len())].to_vec(),
                                 components,
-                                (page*20) as i32,
+                                (page * 20) as i32,
                             )
                             .await;
-                            let reply = CreateInteractionResponse::UpdateMessage(CreateInteractionResponseMessage::default().add_file(attachment).components(components));
-                            interaction.create_response(&ctx.http,reply).await?;
+                            let reply = CreateInteractionResponse::UpdateMessage(
+                                CreateInteractionResponseMessage::default().add_file(attachment).components(components),
+                            );
+                            interaction.create_response(&ctx.http, reply).await?;
                         }
                     }
                     Ok(())
@@ -241,8 +205,6 @@ async fn main() {
         })
         .build();
 
-    let client = serenity::ClientBuilder::new(token, intents)
-        .framework(framework)
-        .await;
+    let client = serenity::ClientBuilder::new(token, intents).framework(framework).await;
     client.unwrap().start().await.unwrap();
 }

@@ -53,9 +53,7 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                 users_map.insert(i.0.clone(), vec![(i.1, i.2)]);
             }
         }
-        let submissions: Vec<(String, i64)> = conn
-            .query("SELECT username,epoch_second FROM submissions")
-            .unwrap();
+        let submissions: Vec<(String, i64)> = conn.query("SELECT username,epoch_second FROM submissions").unwrap();
         let mut submission_map = BTreeMap::new();
         for i in submissions {
             submission_map.insert(i.0, i.1);
@@ -68,7 +66,8 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
             if submission_map.contains_key(&i) {
                 let url: String = format!(
                     "https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user={}&from_second={}",
-                    i,submission_map.get(&i).unwrap()
+                    i,
+                    submission_map.get(&i).unwrap()
                 );
                 log::info!("{}", url);
                 let client = Client::builder().gzip(true).build().unwrap();
@@ -84,10 +83,7 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                             let response = CreateMessage::default();
                             let embed = CreateEmbed::default()
                                 .title("AC Notify")
-                                .description(format!(
-                                    "{}は、{}の{}をACしました!",
-                                    j.user_id, j.contest_id, j.problem_id,
-                                ))
+                                .description(format!("{}は、{}の{}をACしました!", j.user_id, j.contest_id, j.problem_id,))
                                 .color(0x00FF00);
                             response.embed(embed)
                         };
@@ -95,19 +91,18 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                             let response = CreateMessage::default();
                             let embed = CreateEmbed::default()
                                 .title("AC Notify")
-                                .description(format!(
-                                    "{} has solved {} in {}.",
-                                    j.user_id, j.problem_id, j.contest_id
-                                ))
+                                .description(format!("{} has solved {} in {}.", j.user_id, j.problem_id, j.contest_id))
                                 .color(0x00FF00);
                             response.embed(embed)
                         };
                         for k in users_map.get(&i).unwrap() {
                             let channel = ChannelId::new(k.0);
-                            let selected_data: Vec<String> = conn.exec(
-                                r"SELECT language FROM server_settings WHERE server_id=:server_id",
-                                params! {"server_id" => &k.1},
-                            ).unwrap();
+                            let selected_data: Vec<String> = conn
+                                .exec(
+                                    r"SELECT language FROM server_settings WHERE server_id=:server_id",
+                                    params! {"server_id" => &k.1},
+                                )
+                                .unwrap();
                             let mut lang = "ja";
                             if selected_data.len() == 1 {
                                 lang = selected_data[0].as_str();

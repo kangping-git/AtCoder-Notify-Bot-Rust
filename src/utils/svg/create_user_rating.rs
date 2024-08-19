@@ -23,20 +23,16 @@ pub struct CreateUserRating {
 }
 
 impl CreateUserRating {
-    pub async fn from_user(
-        pool: &Arc<Mutex<Pool>>,
-        user: String,
-        contest_type: contest_type::ContestType,
-        x: i32,
-        y: i32,
-    ) -> CreateUserRating {
+    pub async fn from_user(pool: &Arc<Mutex<Pool>>, user: String, contest_type: contest_type::ContestType, x: i32, y: i32) -> CreateUserRating {
         let pool = pool.lock().await;
         let contest_type: i32 = contest_type as i32;
         let mut conn = pool.get_conn().unwrap();
-        let atcoder_rating: Vec<(i32, i32, u32, u32)> = conn.exec(
-            "select algo_rating, heuristic_rating, algo_contests, heuristic_contests from atcoder_user_ratings where user_name=:atcoder_id",
-            params! {"atcoder_id" => user.clone()},
-        ).unwrap();
+        let atcoder_rating: Vec<(i32, i32, u32, u32)> = conn
+            .exec(
+                "select algo_rating, heuristic_rating, algo_contests, heuristic_contests from atcoder_user_ratings where user_name=:atcoder_id",
+                params! {"atcoder_id" => user.clone()},
+            )
+            .unwrap();
         let rating;
         if !atcoder_rating.is_empty() {
             if contest_type == 0 {
@@ -48,8 +44,7 @@ impl CreateUserRating {
             rating = 0
         }
         let rating_colors = &[
-            "#404040", "#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000",
-            "#FF0000",
+            "#404040", "#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000", "#FF0000",
         ];
         let stroke_colors = &[
             "#404040",
@@ -73,18 +68,9 @@ impl CreateUserRating {
         }
         let mut tmpl = Tera::default();
         tmpl.add_raw_templates(vec![
-            (
-                "user_rating_gradient.svg",
-                include_str!("../../../static/img/user_rating_gradient.svg"),
-            ),
-            (
-                "user_rating_circle.svg",
-                include_str!("../../../static/img/user_rating_circle.svg"),
-            ),
-            (
-                "user_rating_text.svg",
-                include_str!("../../../static/img/user_rating_text.svg"),
-            ),
+            ("user_rating_gradient.svg", include_str!("../../../static/img/user_rating_gradient.svg")),
+            ("user_rating_circle.svg", include_str!("../../../static/img/user_rating_circle.svg")),
+            ("user_rating_text.svg", include_str!("../../../static/img/user_rating_text.svg")),
         ])
         .unwrap();
         let mut ctx = Context::new();
@@ -110,9 +96,7 @@ impl CreateUserRating {
             text_svg: tmpl.render("user_rating_text.svg", &ctx).unwrap(),
             option: UserRatingOption {
                 rating,
-                border_color: stroke_colors
-                    [std::cmp::min(((rating + 399) / 400) as usize, stroke_colors.len() - 1)]
-                .to_string(),
+                border_color: stroke_colors[std::cmp::min(((rating + 399) / 400) as usize, stroke_colors.len() - 1)].to_string(),
                 text: user,
                 gradient_name: fill,
             },
@@ -121,8 +105,7 @@ impl CreateUserRating {
     pub async fn from_number(title: String, num: i32, x: i32, y: i32) -> CreateUserRating {
         let rating = num;
         let rating_colors = &[
-            "#404040", "#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000",
-            "#FF0000",
+            "#404040", "#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000", "#FF0000",
         ];
         let stroke_colors = &[
             "#404040",
@@ -149,18 +132,9 @@ impl CreateUserRating {
         }
         let mut tmpl = Tera::default();
         tmpl.add_raw_templates(vec![
-            (
-                "user_rating_gradient.svg",
-                include_str!("../../../static/img/user_rating_gradient.svg"),
-            ),
-            (
-                "user_rating_circle.svg",
-                include_str!("../../../static/img/user_rating_circle.svg"),
-            ),
-            (
-                "user_rating_text.svg",
-                include_str!("../../../static/img/user_rating_text.svg"),
-            ),
+            ("user_rating_gradient.svg", include_str!("../../../static/img/user_rating_gradient.svg")),
+            ("user_rating_circle.svg", include_str!("../../../static/img/user_rating_circle.svg")),
+            ("user_rating_text.svg", include_str!("../../../static/img/user_rating_text.svg")),
         ])
         .unwrap();
         let mut ctx = Context::new();
@@ -186,9 +160,7 @@ impl CreateUserRating {
             text_svg: tmpl.render("user_rating_text.svg", &ctx).unwrap(),
             option: UserRatingOption {
                 rating: num,
-                border_color: stroke_colors
-                    [std::cmp::min(((rating + 399) / 400) as usize, stroke_colors.len() - 1)]
-                .to_string(),
+                border_color: stroke_colors[std::cmp::min(((rating + 399) / 400) as usize, stroke_colors.len() - 1)].to_string(),
                 text: title,
                 gradient_name: fill,
             },

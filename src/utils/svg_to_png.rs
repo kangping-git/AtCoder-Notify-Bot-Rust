@@ -14,11 +14,7 @@ pub fn svg_to_png(svg_data: &str, w: u32, h: u32, scale_x: f32, scale_y: f32) ->
 
     let mut pixmap = Pixmap::new(w, h).ok_or("Failed to create pixmap").unwrap();
 
-    render(
-        &rtree,
-        tiny_skia::Transform::from_scale(scale_x, scale_y),
-        &mut pixmap.as_mut(),
-    );
+    render(&rtree, tiny_skia::Transform::from_scale(scale_x, scale_y), &mut pixmap.as_mut());
 
     pixmap.encode_png().unwrap()
 }

@@ -9,12 +9,8 @@ use crate::commands::rating::rating;
 use crate::commands::register_accounts::delete_account;
 use crate::commands::register_accounts::register_account;
 use crate::commands::register_accounts::show_accounts;
-use crate::commands::set_notification_contest::{
-    set_notification_contest, unset_notification_contest,
-};
-use crate::commands::set_notification_submission::{
-    set_notification_submission, unset_notification_submission,
-};
+use crate::commands::set_notification_contest::{set_notification_contest, unset_notification_contest};
+use crate::commands::set_notification_submission::{set_notification_submission, unset_notification_submission};
 use crate::commands::show_notification::show_notification;
 
 #[poise::command(

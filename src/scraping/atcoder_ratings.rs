@@ -64,14 +64,13 @@ struct UserRatingDataFromAtCoder {
 pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, get_all: bool) {
     let pool = conn_raw.lock().await;
     let mut conn = pool.get_conn().unwrap();
-    let contests: Vec<(String, i8, i32,bool,String,i32)> = conn
+    let contests: Vec<(String, i8, i32, bool, String, i32)> = conn
         .query(r"select contest_id,contest_type,rating_range_end,get_user_ratings_flag,start_time,duration from contests where rating_range_end>=0")
         .unwrap();
     let mut contests: Vec<&(String, i8, i32, bool, String, i32)> = contests
         .iter()
         .filter(|contest| {
-            let start_time =
-                chrono::DateTime::parse_from_str(&contest.4, "%Y-%m-%d %H:%M:%S%z").unwrap();
+            let start_time = chrono::DateTime::parse_from_str(&contest.4, "%Y-%m-%d %H:%M:%S%z").unwrap();
             let offset = chrono::Duration::minutes(contest.5 as i64);
             let end_time = start_time + offset;
             chrono::Local::now() >= end_time
@@ -79,9 +78,8 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, g
         .collect();
 
     contests.sort_by(|a, b| {
-        let duration: chrono::Duration = DateTime::parse_from_str(&a.4, "%Y-%m-%d %H:%M:%S%z")
-            .unwrap()
-            - DateTime::parse_from_str(&b.4, "%Y-%m-%d %H:%M:%S%z").unwrap();
+        let duration: chrono::Duration =
+            DateTime::parse_from_str(&a.4, "%Y-%m-%d %H:%M:%S%z").unwrap() - DateTime::parse_from_str(&b.4, "%Y-%m-%d %H:%M:%S%z").unwrap();
         if duration.num_milliseconds() > 0 {
             Ordering::Greater
         } else {
@@ -92,14 +90,9 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, g
     let mut user_history: Vec<UserRatings> = vec![];
 
     let mut algo_rating_cache: BTreeMap<String, Vec<UserRatingDataFromAtCoder>> = BTreeMap::new();
-    let mut heuristic_rating_cache: BTreeMap<String, Vec<UserRatingDataFromAtCoder>> =
-        BTreeMap::new();
+    let mut heuristic_rating_cache: BTreeMap<String, Vec<UserRatingDataFromAtCoder>> = BTreeMap::new();
 
-    let client = Client::builder()
-        .cookie_store(true)
-        .cookie_provider(Arc::clone(cookie_store))
-        .build()
-        .unwrap();
+    let client = Client::builder().cookie_store(true).cookie_provider(Arc::clone(cookie_store)).build().unwrap();
 
     let mut contests_list: Vec<String> = vec![];
 
@@ -126,47 +119,30 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, g
                         if *contest_type == 0 {
                             has_cache = algo_rating_cache.contains_key(&i.UserScreenName);
                             if has_cache {
-                                rating_history
-                                    .clone_from(algo_rating_cache.get(&i.UserScreenName).unwrap());
+                                rating_history.clone_from(algo_rating_cache.get(&i.UserScreenName).unwrap());
                             }
                         } else {
                             has_cache = heuristic_rating_cache.contains_key(&i.UserScreenName);
                             if has_cache {
-                                rating_history.clone_from(
-                                    heuristic_rating_cache.get(&i.UserScreenName).unwrap(),
-                                );
+                                rating_history.clone_from(heuristic_rating_cache.get(&i.UserScreenName).unwrap());
                             }
                         }
                         if !has_cache {
-                            let algo_flag = if *contest_type == 0 {
-                                "contestType=algo"
-                            } else {
-                                "contestType=heuristic"
-                            };
+                            let algo_flag = if *contest_type == 0 { "contestType=algo" } else { "contestType=heuristic" };
                             sleep(Duration::from_millis(1000)).await;
                             log::info!("get inner performance: {}", i.UserScreenName);
-                            let user_rating_page = format!(
-                                "https://atcoder.jp/users/{}/history/json?{}",
-                                &i.UserScreenName, algo_flag
-                            );
+                            let user_rating_page = format!("https://atcoder.jp/users/{}/history/json?{}", &i.UserScreenName, algo_flag);
                             log::info!("{user_rating_page}");
-                            let response =
-                                client.get(user_rating_page).send().unwrap().text().unwrap();
+                            let response = client.get(user_rating_page).send().unwrap().text().unwrap();
                             let response_text = response.trim();
                             let response_json = serde_json::from_str(response_text);
                             match response_json {
                                 Ok(response_json) => {
                                     rating_history = response_json;
                                     if *contest_type == 0 {
-                                        algo_rating_cache.insert(
-                                            i.UserScreenName.clone(),
-                                            rating_history.clone(),
-                                        );
+                                        algo_rating_cache.insert(i.UserScreenName.clone(), rating_history.clone());
                                     } else {
-                                        heuristic_rating_cache.insert(
-                                            i.UserScreenName.clone(),
-                                            rating_history.clone(),
-                                        );
+                                        heuristic_rating_cache.insert(i.UserScreenName.clone(), rating_history.clone());
                                     }
                                 }
                                 Err(_) => is_delete = true,
@@ -177,10 +153,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, g
                                 performance = i.InnerPerformance
                             }
                         }
-                        log::info!(
-                            "user {}'s innerPerf is {performance}. is_delete flag is {is_delete}",
-                            i.UserScreenName
-                        )
+                        log::info!("user {}'s innerPerf is {performance}. is_delete flag is {is_delete}", i.UserScreenName)
                     }
                     if !is_delete {
                         user_history.push(UserRatings {

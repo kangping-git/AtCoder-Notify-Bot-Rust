@@ -12,7 +12,7 @@ pub async fn show_notification(ctx: Context<'_>) -> Result<(), Error> {
     let mut conn = pool.get_conn().unwrap();
     let guild_id = ctx.guild_id().unwrap().to_string();
 
-    let  settings: Vec<(String,String)> = conn.exec(
+    let settings: Vec<(String, String)> = conn.exec(
         r"SELECT contest_channel_id,submission_channel_id FROM notifications WHERE server_id=:server_id",
         params! {"server_id" => &guild_id},
     )?;
@@ -34,51 +34,31 @@ pub async fn show_notification(ctx: Context<'_>) -> Result<(), Error> {
     }
 
     let response = {
-        let mut embed = serenity::CreateEmbed::default().author(
-            CreateEmbedAuthor::new("")
-                .name("AtCoder Notify Bot v3")
-                .icon_url(ctx.data().avatar_url.as_str())
-                .url("https://atcoder-notify.com/"),
-        );
+        let mut embed = serenity::CreateEmbed::default()
+            .author(CreateEmbedAuthor::new("").name("AtCoder Notify Bot v3").icon_url(ctx.data().avatar_url.as_str()).url("https://atcoder-notify.com/"));
         if lang == "ja" {
             embed = embed.title("現在のサーバー設定");
             if contest_channel_id == "null" {
                 embed = embed.field("コンテスト情報", "未設定", false);
             } else {
-                embed = embed.field(
-                    "コンテスト情報",
-                    format!("<#{}>", contest_channel_id),
-                    false,
-                );
+                embed = embed.field("コンテスト情報", format!("<#{}>", contest_channel_id), false);
             }
             if submission_channel_id == "null" {
                 embed = embed.field("ユーザー提出情報", "未設定", false);
             } else {
-                embed = embed.field(
-                    "ユーザー提出情報",
-                    format!("<#{}>", submission_channel_id),
-                    false,
-                );
+                embed = embed.field("ユーザー提出情報", format!("<#{}>", submission_channel_id), false);
             }
         } else {
             embed = embed.title("Current Server Settings");
             if contest_channel_id == "null" {
                 embed = embed.field("Contest Information", "Not Set", false);
             } else {
-                embed = embed.field(
-                    "Contest Information",
-                    format!("<#{}>", contest_channel_id),
-                    false,
-                );
+                embed = embed.field("Contest Information", format!("<#{}>", contest_channel_id), false);
             }
             if submission_channel_id == "null" {
                 embed = embed.field("User Submission Information", "Not Set", false);
             } else {
-                embed = embed.field(
-                    "User Submission Information",
-                    format!("<#{}>", submission_channel_id),
-                    false,
-                );
+                embed = embed.field("User Submission Information", format!("<#{}>", submission_channel_id), false);
             }
         }
         poise::CreateReply::default().embed(embed).ephemeral(true)
