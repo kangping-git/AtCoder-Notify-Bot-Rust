@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, env, sync::Arc};
 
 use actix_web::{
     get,
@@ -175,7 +175,10 @@ async fn default_handler(req_method: Method) -> Result<impl Responder> {
 
 #[actix_web::main]
 pub async fn start() {
-    dotenvy::dotenv().unwrap();
+    for item in dotenvy::dotenv_iter().unwrap() {
+        let (key, val) = item.unwrap();
+        env::set_var(key, val);
+    }
 
     log::info!("Web Server Service");
     let url = format!(

@@ -28,6 +28,7 @@ use scraping::get_ranking::get_ranking;
 use scraping::get_submission::get_submission;
 use scraping::get_user_list;
 use sha2::Digest;
+use std::env;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -36,7 +37,6 @@ use web_server::start;
 
 use commands::atcoder;
 use commands::server;
-use dotenvy::dotenv;
 use poise::serenity_prelude as serenity;
 use scraping::login;
 
@@ -97,8 +97,11 @@ async fn interval(ctx: serenity::Context) {
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
     init_logger();
+    for item in dotenvy::dotenv_iter().unwrap() {
+        let (key, val) = item.unwrap();
+        env::set_var(key, val);
+    }
 
     let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
     let intents = serenity::GatewayIntents::all();

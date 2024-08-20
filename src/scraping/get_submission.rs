@@ -25,10 +25,25 @@ struct Submission {
     execution_time: Option<i32>,
 }
 
+#[derive(Deserialize, Serialize, Default)]
+struct Diff {
+    intercept: Option<f64>,
+    variance: Option<f64>,
+    difficulty: Option<i32>,
+    discrimination: Option<f64>,
+    irt_loglikelihood: Option<f64>,
+    irt_users: Option<i32>,
+    is_experimental: Option<bool>,
+}
+
 pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
     let pool = pool.lock().await;
     let mut conn = pool.get_conn().unwrap();
     loop {
+        let client = Client::builder().gzip(true).build().unwrap();
+        let diff_response = client.get("https://kenkoooo.com/atcoder/resources/problem-models.json").send().await.unwrap();
+        let text = diff_response.text().await.unwrap_or_default();
+        let diff: BTreeMap<String, Diff> = serde_json::from_str(&text).unwrap();
         let users: Vec<(String, u64, u64)> = conn
             .query(
                 "SELECT
@@ -70,28 +85,43 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                     submission_map.get(&i).unwrap()
                 );
                 log::info!("{}", url);
-                let client = Client::builder().gzip(true).build().unwrap();
                 let response = client.get(url).send().await.unwrap();
                 let text = response.text().await.unwrap_or_default();
-                log::info!("{}", text);
                 let mut last: i64 = *submission_map.get(&i).unwrap();
                 let json: Vec<Submission> = serde_json::from_str(&text).unwrap();
                 for j in json {
                     if j.result == "AC" {
+                        let mut diff_text = "null".to_string();
+                        let diff = diff.get(&j.problem_id);
+                        if let Some(diff) = diff {
+                            diff_text = match diff.difficulty {
+                                Some(diff) => {
+                                    if diff <= 400 {
+                                        ((400.0 / (f64::exp((400.0 - diff as f64) / 400.0))) as i32).to_string()
+                                    } else {
+                                        diff.to_string()
+                                    }
+                                }
+                                None => "null".to_string(),
+                            };
+                        }
                         last = std::cmp::max(last, j.epoch_second + 1);
-                        let response_en = {
-                            let response = CreateMessage::default();
-                            let embed = CreateEmbed::default()
-                                .title("AC Notify")
-                                .description(format!("{}は、{}の{}をACしました!", j.user_id, j.contest_id, j.problem_id,))
-                                .color(0x00FF00);
-                            response.embed(embed)
-                        };
                         let response_ja = {
                             let response = CreateMessage::default();
                             let embed = CreateEmbed::default()
                                 .title("AC Notify")
-                                .description(format!("{} has solved {} in {}.", j.user_id, j.problem_id, j.contest_id))
+                                .description(format!(
+                                    "{}は、{}の{}をACしました! Diffは{}です",
+                                    j.user_id, j.contest_id, j.problem_id, diff_text
+                                ))
+                                .color(0x00FF00);
+                            response.embed(embed)
+                        };
+                        let response_en = {
+                            let response = CreateMessage::default();
+                            let embed = CreateEmbed::default()
+                                .title("AC Notify")
+                                .description(format!("{} has solved {} in {}. Diff is {}", j.user_id, j.problem_id, j.contest_id, diff_text))
                                 .color(0x00FF00);
                             response.embed(embed)
                         };
