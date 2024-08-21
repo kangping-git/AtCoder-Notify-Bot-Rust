@@ -1,13 +1,14 @@
 use chrono::DateTime;
 use mysql::prelude::*;
 use mysql::*;
+use poise::serenity_prelude::{Context, GuildId, RoleId, UserId};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashSet};
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::Mutex;
 
-pub async fn user_list_update(conn: &Arc<Mutex<Pool>>) {
+pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) {
     let pool = conn.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let start_time = Instant::now();
@@ -25,12 +26,29 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>) {
         };
         history.push((i.1, i.2, i.3));
     }
+
+    let atcoder_users_vec: Vec<(u64, String, u64, i32)> = conn
+        .query(
+            r"SELECT
+            users.discord_id,
+            users.atcoder_username,
+            users.server_id,
+            COALESCE(atcoder_user_ratings.algo_rating, 0) AS algo_rating
+        FROM
+            users
+        LEFT JOIN
+            atcoder_user_ratings
+        ON
+            users.atcoder_username = atcoder_user_ratings.user_name",
+        )
+        .unwrap();
     log::info!("add to BTreeMap: {:?}", start_time.elapsed());
     let contests: Vec<(String, String)> = conn.query("select contest_id,start_time from contests").unwrap();
     let mut contest_data = BTreeMap::new();
     for (contest_id, start_time) in contests {
         contest_data.insert(contest_id, DateTime::parse_from_str(&start_time, "%Y-%m-%d %H:%M:%S%z").unwrap());
     }
+    let mut user_rating_map = BTreeMap::new();
     let mut transaction = conn.start_transaction(TxOpts::default()).unwrap();
     transaction.query_drop("delete from atcoder_user_ratings").unwrap();
     for i in &user_set {
@@ -84,6 +102,7 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>) {
             heuristic_aperf = a / b;
             heuristic_contests = rating_history.len();
         }
+        user_rating_map.insert(i.clone(), algo_rating);
         transaction
             .exec_drop(
                 "insert into atcoder_user_ratings (user_name, algo_aperf, algo_rating, algo_contests, heuristic_aperf, heuristic_rating, heuristic_contests)
@@ -99,6 +118,34 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>) {
                 },
             )
             .unwrap();
+    }
+    for i in atcoder_users_vec {
+        let ur = user_rating_map.get(&i.1).unwrap_or(&0);
+        let old_rating_color = if i.3 == 0 { 0 } else { std::cmp::min(8, i.3 / 400 + 1) };
+        let new_rating_color = if ur == &0 { 0 } else { std::cmp::min(8, ur / 400 + 1) };
+        if old_rating_color != new_rating_color {
+            let roles: Vec<(u64, i8)> = transaction
+                .exec(
+                    "SELECT role_id, role_color FROM roles WHERE guild_id=:guild_id",
+                    params! {
+                        "guild_id" => i.2
+                    },
+                )
+                .unwrap();
+            if roles.is_empty() {
+                continue;
+            }
+            let mut role_map = BTreeMap::new();
+            for (role_id, role_color) in roles {
+                role_map.insert(role_color, role_id);
+            }
+            let user = UserId::new(i.0);
+            let member = GuildId::new(i.2).member(&ctx.http, user).await;
+            if let Ok(member) = member {
+                let _ = member.remove_role(&ctx.http, RoleId::new(*role_map.get(&(old_rating_color as i8)).unwrap_or(&0u64))).await;
+                let _ = member.add_role(&ctx.http, RoleId::new(*role_map.get(&(new_rating_color as i8)).unwrap_or(&0u64))).await;
+            }
+        }
     }
     transaction.commit().unwrap();
     log::info!("add to Database: {:?}", start_time.elapsed());
