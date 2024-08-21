@@ -1,6 +1,7 @@
 use chrono::{self, DateTime};
 use mysql::prelude::*;
 use mysql::*;
+use poise::serenity_prelude::{Context, GuildId, RoleId, UserId};
 use reqwest::blocking::Client;
 use reqwest::cookie::Jar;
 use serde::{Deserialize, Serialize};
@@ -61,7 +62,7 @@ struct UserRatingDataFromAtCoder {
     EndTime: String,
 }
 
-pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, get_all: bool) {
+pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, ctx: &Context, get_all: bool) {
     let pool = conn_raw.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let contests: Vec<(String, i8, i32, bool, String, i32)> = conn
@@ -169,6 +170,22 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, g
         }
     }
 
+    let atcoder_users_vec: Vec<(u64, String, u64, i32)> = conn
+        .query(
+            r"SELECT
+            users.discord_id,
+            users.atcoder_username,
+            users.server_id,
+            COALESCE(atcoder_user_ratings.algo_rating, 0) AS algo_rating
+        FROM
+            users
+        LEFT JOIN
+            atcoder_user_ratings
+        ON
+            users.atcoder_username = atcoder_user_ratings.user_name",
+        )
+        .unwrap();
+
     let mut transaction = conn.start_transaction(TxOpts::default()).unwrap();
 
     transaction
@@ -196,6 +213,37 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, g
             )
             .unwrap();
     }
+
+    for i in atcoder_users_vec {
+        for ur in &user_history {
+            let old_rating_color = if i.3 == 0 { 0 } else { std::cmp::min(8, i.3 / 400 + 1) };
+            let new_rating_color = if ur.rating == 0 { 0 } else { std::cmp::min(8, ur.rating / 400 + 1) };
+            if old_rating_color != new_rating_color {
+                let roles: Vec<(u64, i8)> = transaction
+                    .exec(
+                        "SELECT role_id, role_color FROM roles WHERE guild_id=:guild_id",
+                        params! {
+                            "guild_id" => i.2
+                        },
+                    )
+                    .unwrap();
+                if roles.is_empty() {
+                    continue;
+                }
+                let mut role_map = BTreeMap::new();
+                for (role_id, role_color) in roles {
+                    role_map.insert(role_color, role_id);
+                }
+                let user = UserId::new(i.0);
+                let member = GuildId::new(i.2).member(&ctx.http, user).await;
+                if let Ok(member) = member {
+                    let _ = member.remove_role(&ctx.http, RoleId::new(*role_map.get(&(old_rating_color as i8)).unwrap_or(&0u64))).await;
+                    let _ = member.add_role(&ctx.http, RoleId::new(*role_map.get(&(new_rating_color as i8)).unwrap_or(&0u64))).await;
+                }
+            }
+        }
+    }
+
     transaction.commit().unwrap();
     if !contests_list.is_empty() {
         get_user_list::user_list_update(conn_raw).await;

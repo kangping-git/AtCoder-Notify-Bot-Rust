@@ -86,7 +86,7 @@ async fn interval(ctx: serenity::Context) {
         } else if last_minute != now.minute() {
             log::info!("分ごとの処理");
             get_ranking(&pool, &cookie_store, &ctx).await;
-            get_ratings(&cookie_store, &pool, false).await;
+            get_ratings(&cookie_store, &pool, &ctx, false).await;
             log::info!("分ごとの処理終了");
             last_minute = now.minute();
         }
