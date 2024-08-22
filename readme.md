@@ -1,6 +1,6 @@
 # AtCoder 通知 Bot
 
-## .env ファイル
+## config.env ファイル
 
 ```env
 DISCORD_MAIN="<Discord_Token>"

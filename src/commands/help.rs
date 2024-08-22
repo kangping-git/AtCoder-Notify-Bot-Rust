@@ -39,12 +39,9 @@ pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
         serde_json::from_str(include_str!("../assets/commands_en.json")).unwrap()
     };
 
-    let mut embed = serenity::CreateEmbed::default().title("help").author(
-        CreateEmbedAuthor::new("")
-            .name("AtCoder Notify Bot v3")
-            .icon_url(ctx.data().avatar_url.as_str())
-            .url("https://atcoder-notify.com/"),
-    );
+    let mut embed = serenity::CreateEmbed::default()
+        .title("help")
+        .author(CreateEmbedAuthor::new("").name("AtCoder Notify Bot v3").icon_url(ctx.data().avatar_url.as_str()).url("https://atcoder-notify.com/"));
     for i in help_obj {
         embed = embed.field(i.usage, i.description.join("\n"), false);
     }

@@ -8,20 +8,7 @@ use url::Url;
 use super::contest_type::{Contest, ContestRatingType, ContestType};
 use std::sync::OnceLock;
 
-type ContestDataTuple = (
-    i32,
-    String,
-    String,
-    String,
-    i32,
-    String,
-    i8,
-    i8,
-    i32,
-    i32,
-    String,
-    i8,
-);
+type ContestDataTuple = (i32, String, String, String, i32, String, i8, i8, i32, i32, String, i8);
 
 #[derive(Debug)]
 struct GetContestPageResult {
@@ -47,18 +34,11 @@ async fn get_contest_page() -> GetContestPageResult {
     log::info!("Get Contests Page");
     let mut contests: Vec<Contest> = vec![];
 
-    let contest_page_html = reqwest::get("https://atcoder.jp/contests/?lang=ja")
-        .await
-        .unwrap()
-        .text()
-        .await
-        .unwrap();
+    let contest_page_html = reqwest::get("https://atcoder.jp/contests/?lang=ja").await.unwrap().text().await.unwrap();
 
     let document = scraper::Html::parse_document(&contest_page_html);
 
-    let contests_time_selector = SELECTOR2_CONTESTS.get_or_init(|| {
-        Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(1) time").unwrap()
-    });
+    let contests_time_selector = SELECTOR2_CONTESTS.get_or_init(|| Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(1) time").unwrap());
     let contests_time = document.select(contests_time_selector);
     for element in contests_time {
         contests.push(Contest {
@@ -67,10 +47,8 @@ async fn get_contest_page() -> GetContestPageResult {
         });
     }
 
-    let contests_type_selector = SELECTOR2_CONTEST_TYPE.get_or_init(|| {
-        Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(2) span:nth-child(1)")
-            .unwrap()
-    });
+    let contests_type_selector =
+        SELECTOR2_CONTEST_TYPE.get_or_init(|| Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(2) span:nth-child(1)").unwrap());
     let contest_type = document.select(contests_type_selector);
     for (i, element) in contest_type.enumerate() {
         let is_algo = element.inner_html() == "Ⓐ";
@@ -81,10 +59,8 @@ async fn get_contest_page() -> GetContestPageResult {
         }
     }
 
-    let contests_rating_type_selector = SELECTOR2_CONTEST_RATING_TYPE.get_or_init(|| {
-        Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(2) span:nth-child(2)")
-            .unwrap()
-    });
+    let contests_rating_type_selector =
+        SELECTOR2_CONTEST_RATING_TYPE.get_or_init(|| Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(2) span:nth-child(2)").unwrap());
     let contest_rating_type = document.select(contests_rating_type_selector);
     for (i, element) in contest_rating_type.enumerate() {
         let contest_rating_type = element.attr("class").unwrap();
@@ -99,9 +75,7 @@ async fn get_contest_page() -> GetContestPageResult {
         }
     }
 
-    let contest_name_selector = SELECTOR2_CONTEST_NAME.get_or_init(|| {
-        Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(2) a").unwrap()
-    });
+    let contest_name_selector = SELECTOR2_CONTEST_NAME.get_or_init(|| Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(2) a").unwrap());
     let contest_name = document.select(contest_name_selector);
     for (i, element) in contest_name.enumerate() {
         contests[i].contest_name = element.inner_html();
@@ -111,9 +85,7 @@ async fn get_contest_page() -> GetContestPageResult {
         contests[i].url = contest_link.to_string();
     }
 
-    let contest_duration_selector = SELECTOR2_CONTEST_DURATION.get_or_init(|| {
-        Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(3)").unwrap()
-    });
+    let contest_duration_selector = SELECTOR2_CONTEST_DURATION.get_or_init(|| Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(3)").unwrap());
     let contest_duration = document.select(contest_duration_selector);
     for (i, element) in contest_duration.enumerate() {
         let contest_duration_raw = element.inner_html();
@@ -123,9 +95,8 @@ async fn get_contest_page() -> GetContestPageResult {
         contests[i].contest_duration = hour * 60 + minute;
     }
 
-    let contest_rating_range_selector = SELECTOR2_CONTEST_RATING_RANGE.get_or_init(|| {
-        Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(4)").unwrap()
-    });
+    let contest_rating_range_selector =
+        SELECTOR2_CONTEST_RATING_RANGE.get_or_init(|| Selector::parse("div#contest-table-upcoming tbody tr td:nth-child(4)").unwrap());
     let contest_rating_range = document.select(contest_rating_range_selector);
     for (i, element) in contest_rating_range.enumerate() {
         let contest_rating_range_raw = element.inner_html();
@@ -134,8 +105,7 @@ async fn get_contest_page() -> GetContestPageResult {
         } else if contest_rating_range_raw == "-" {
             contests[i].rating_ragnge = (-998244353, -998244353);
         } else {
-            let contest_rating_range_split: Vec<&str> =
-                contest_rating_range_raw.split('~').collect();
+            let contest_rating_range_split: Vec<&str> = contest_rating_range_raw.split('~').collect();
             let rating_first_str = contest_rating_range_split[0].trim();
             let rating_end_str = contest_rating_range_split[1].trim();
 
@@ -163,21 +133,11 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
 
     let mut contests: Vec<Contest> = vec![];
 
-    let contest_page_html = reqwest::get(format!(
-        "https://atcoder.jp/contests/archive?page={}&lang=ja",
-        page
-    ))
-    .await
-    .unwrap()
-    .text()
-    .await
-    .unwrap();
+    let contest_page_html = reqwest::get(format!("https://atcoder.jp/contests/archive?page={}&lang=ja", page)).await.unwrap().text().await.unwrap();
 
     let document = scraper::Html::parse_document(&contest_page_html);
 
-    let contests_time_selector = SELECTOR_CONTESTS.get_or_init(|| {
-        Selector::parse("div.table-responsive tbody tr td:nth-child(1) time").unwrap()
-    });
+    let contests_time_selector = SELECTOR_CONTESTS.get_or_init(|| Selector::parse("div.table-responsive tbody tr td:nth-child(1) time").unwrap());
     let contests_time = document.select(contests_time_selector);
     for element in contests_time {
         contests.push(Contest {
@@ -186,9 +146,8 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
         });
     }
 
-    let contests_type_selector = SELECTOR_CONTEST_TYPE.get_or_init(|| {
-        Selector::parse("div.table-responsive tbody tr td:nth-child(2) span:nth-child(1)").unwrap()
-    });
+    let contests_type_selector =
+        SELECTOR_CONTEST_TYPE.get_or_init(|| Selector::parse("div.table-responsive tbody tr td:nth-child(2) span:nth-child(1)").unwrap());
     let contest_type = document.select(contests_type_selector);
     for (i, element) in contest_type.enumerate() {
         let is_algo = element.inner_html() == "Ⓐ";
@@ -199,9 +158,8 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
         }
     }
 
-    let contests_rating_type_selector = SELECTOR_CONTEST_RATING_TYPE.get_or_init(|| {
-        Selector::parse("div.table-responsive tbody tr td:nth-child(2) span:nth-child(2)").unwrap()
-    });
+    let contests_rating_type_selector =
+        SELECTOR_CONTEST_RATING_TYPE.get_or_init(|| Selector::parse("div.table-responsive tbody tr td:nth-child(2) span:nth-child(2)").unwrap());
     let contest_rating_type = document.select(contests_rating_type_selector);
     for (i, element) in contest_rating_type.enumerate() {
         let contest_rating_type = element.attr("class").unwrap();
@@ -216,9 +174,7 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
         }
     }
 
-    let contest_name_selector = SELECTOR_CONTEST_NAME.get_or_init(|| {
-        Selector::parse("div.table-responsive tbody tr td:nth-child(2) a").unwrap()
-    });
+    let contest_name_selector = SELECTOR_CONTEST_NAME.get_or_init(|| Selector::parse("div.table-responsive tbody tr td:nth-child(2) a").unwrap());
     let contest_name = document.select(contest_name_selector);
     for (i, element) in contest_name.enumerate() {
         contests[i].contest_name = element.inner_html();
@@ -228,8 +184,7 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
         contests[i].url = contest_link.to_string();
     }
 
-    let contest_duration_selector = SELECTOR_CONTEST_DURATION
-        .get_or_init(|| Selector::parse("div.table-responsive tbody tr td:nth-child(3)").unwrap());
+    let contest_duration_selector = SELECTOR_CONTEST_DURATION.get_or_init(|| Selector::parse("div.table-responsive tbody tr td:nth-child(3)").unwrap());
     let contest_duration = document.select(contest_duration_selector);
     for (i, element) in contest_duration.enumerate() {
         let contest_duration_raw = element.inner_html();
@@ -239,8 +194,7 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
         contests[i].contest_duration = hour * 60 + minute;
     }
 
-    let contest_rating_range_selector = SELECTOR_CONTEST_RATING_RANGE
-        .get_or_init(|| Selector::parse("div.table-responsive tbody tr td:nth-child(4)").unwrap());
+    let contest_rating_range_selector = SELECTOR_CONTEST_RATING_RANGE.get_or_init(|| Selector::parse("div.table-responsive tbody tr td:nth-child(4)").unwrap());
     let contest_rating_range = document.select(contest_rating_range_selector);
     for (i, element) in contest_rating_range.enumerate() {
         let contest_rating_range_raw = element.inner_html();
@@ -249,8 +203,7 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
         } else if contest_rating_range_raw == "-" {
             contests[i].rating_ragnge = (-998244353, -998244353);
         } else {
-            let contest_rating_range_split: Vec<&str> =
-                contest_rating_range_raw.split('~').collect();
+            let contest_rating_range_split: Vec<&str> = contest_rating_range_raw.split('~').collect();
             let rating_first_str = contest_rating_range_split[0].trim();
             let rating_end_str = contest_rating_range_split[1].trim();
 
@@ -272,20 +225,19 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
 
     let mut max = -1;
     if get_pages {
-        let contest_page_pagination_selector = SELECTOR_CONTEST_PAGE_PAGINATION
-            .get_or_init(|| Selector::parse("a[href^=\"/contests/archive?lang=ja&\"]").unwrap());
+        let contest_page_pagination_selector =
+            SELECTOR_CONTEST_PAGE_PAGINATION.get_or_init(|| Selector::parse("a[href^=\"/contests/archive?lang=ja&\"]").unwrap());
         let contest_page_pagination = document.select(contest_page_pagination_selector);
         for element in contest_page_pagination {
-            let query =
-                Url::parse(format!("https://atcoder.jp{}", element.attr("href").unwrap()).as_str())
-                    .unwrap()
-                    .query_pairs()
-                    .find(|(k, _)| k == "page")
-                    .unwrap()
-                    .1
-                    .to_string()
-                    .parse::<i32>()
-                    .unwrap();
+            let query = Url::parse(format!("https://atcoder.jp{}", element.attr("href").unwrap()).as_str())
+                .unwrap()
+                .query_pairs()
+                .find(|(k, _)| k == "page")
+                .unwrap()
+                .1
+                .to_string()
+                .parse::<i32>()
+                .unwrap();
             max = std::cmp::max(max, query);
         }
     }

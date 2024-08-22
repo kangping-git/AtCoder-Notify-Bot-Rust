@@ -62,11 +62,7 @@ pub struct TableData {
     pub height: i32,
 }
 
-pub async fn create_table(
-    pool: &Arc<Mutex<Pool>>,
-    title: String,
-    table_rows: Vec<Row>,
-) -> TableData {
+pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Vec<Row>) -> TableData {
     let mut gradient_vec: Vec<String> = vec![];
     let mut circle_vec: Vec<String> = vec![];
     let mut rows_vec: Vec<String> = vec![];
@@ -87,14 +83,7 @@ pub async fn create_table(
                 for records in rating_data.data {
                     match records {
                         RatingType::UserRating(user_data) => {
-                            let rating = CreateUserRating::from_user(
-                                pool,
-                                user_data.username.clone(),
-                                user_data.contest_type,
-                                x + 5,
-                                y - 78,
-                            )
-                            .await;
+                            let rating = CreateUserRating::from_user(pool, user_data.username.clone(), user_data.contest_type, x + 5, y - 78).await;
                             if !gradient_id_set.contains(&rating.option.gradient_name) {
                                 gradient_vec.push(rating.gradient_svg);
                                 gradient_id_set.insert(rating.option.gradient_name);
@@ -108,13 +97,7 @@ pub async fn create_table(
                             ));
                         }
                         RatingType::Custom(custom_data) => {
-                            let rating = CreateUserRating::from_number(
-                                custom_data.title.clone(),
-                                custom_data.rating,
-                                x + 5,
-                                y - 78,
-                            )
-                            .await;
+                            let rating = CreateUserRating::from_number(custom_data.title.clone(), custom_data.rating, x + 5, y - 78).await;
                             if !gradient_id_set.contains(&rating.option.gradient_name) {
                                 gradient_vec.push(rating.gradient_svg);
                                 gradient_id_set.insert(rating.option.gradient_name);
@@ -166,11 +149,7 @@ pub async fn create_table(
         height = std::cmp::max(height, y);
     }
     let mut tmpl = Tera::default();
-    tmpl.add_raw_templates(vec![(
-        "table.svg",
-        include_str!("../../../static/img/table.svg"),
-    )])
-    .unwrap();
+    tmpl.add_raw_templates(vec![("table.svg", include_str!("../../../static/img/table.svg"))]).unwrap();
     let mut ctx = Context::new();
     ctx.insert("gradient", &gradient_vec.join(""));
     ctx.insert("rows", &rows_vec.join(""));

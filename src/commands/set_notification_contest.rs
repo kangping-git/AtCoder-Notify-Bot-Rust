@@ -3,14 +3,14 @@ use crate::{Context, Error};
 use mysql::prelude::*;
 use mysql::*;
 
-use poise::serenity_prelude::{self as serenity, json::NULL, CreateEmbedAuthor};
+use poise::{
+    serenity_prelude::{self as serenity, json::NULL, CreateEmbed, CreateEmbedAuthor},
+    CreateReply,
+};
 
 /// Set the channel for notifications about AtCoder contest information.
 #[poise::command(prefix_command, slash_command, rename = "contest")]
-pub async fn set_notification_contest(
-    ctx: Context<'_>,
-    #[description = "notify channel"] channel: serenity::Channel,
-) -> Result<(), Error> {
+pub async fn set_notification_contest(ctx: Context<'_>, #[description = "notify channel"] channel: serenity::Channel) -> Result<(), Error> {
     let pool = ctx.data().conn.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let guild_id = ctx.guild_id().unwrap().to_string();
@@ -29,6 +29,29 @@ pub async fn set_notification_contest(
     if selected_data.len() == 1 {
         lang = selected_data[0].as_str();
     }
+    let owners: Vec<u64> = conn
+        .exec(
+            "SELECT user_id FROM owners WHERE guild_id=:guild_id",
+            params! {
+                "guild_id" => ctx.guild_id().unwrap_or_default().get()
+            },
+        )
+        .unwrap();
+    let has_permission = if owners.is_empty() || owners.contains(&{ ctx.author().id.get() }) {
+        true
+    } else {
+        ctx.author().id.get() == ctx.guild().unwrap().owner_id.get()
+    };
+    if !has_permission {
+        if lang == "ja" {
+            let response = CreateReply::default().embed(CreateEmbed::default().title("エラー").description("権限がありません。")).ephemeral(true);
+            ctx.send(response).await?;
+        } else {
+            let response = CreateReply::default().embed(CreateEmbed::default().title("Error").description("You do not have permission.")).ephemeral(true);
+            ctx.send(response).await?;
+        }
+        return Ok(());
+    }
 
     if count[0] == 0 {
         conn.exec_drop(
@@ -43,22 +66,12 @@ pub async fn set_notification_contest(
     }
 
     let response = {
-        let mut embed = serenity::CreateEmbed::default().author(
-            CreateEmbedAuthor::new("")
-                .name("AtCoder Notify Bot v3")
-                .icon_url(ctx.data().avatar_url.as_str())
-                .url("https://atcoder-notify.com/"),
-        );
+        let mut embed = serenity::CreateEmbed::default()
+            .author(CreateEmbedAuthor::new("").name("AtCoder Notify Bot v3").icon_url(ctx.data().avatar_url.as_str()).url("https://atcoder-notify.com/"));
         if lang == "ja" {
-            embed = embed.title("設定変更").description(format!(
-                "コンテスト情報の通知チャンネルを <#{}> に設定しました。",
-                channel_id
-            ));
+            embed = embed.title("設定変更").description(format!("コンテスト情報の通知チャンネルを <#{}> に設定しました。", channel_id));
         } else {
-            embed = embed.title("Settings Changed").description(format!(
-                "Contest information notification channel set to <#{}>.",
-                channel_id
-            ));
+            embed = embed.title("Settings Changed").description(format!("Contest information notification channel set to <#{}>.", channel_id));
         }
         poise::CreateReply::default().embed(embed).ephemeral(true)
     };
@@ -102,20 +115,12 @@ pub async fn unset_notification_contest(ctx: Context<'_>) -> Result<(), Error> {
     }
 
     let response = {
-        let mut embed = serenity::CreateEmbed::default().author(
-            CreateEmbedAuthor::new("")
-                .name("AtCoder Notify Bot v3")
-                .icon_url(ctx.data().avatar_url.as_str())
-                .url("https://atcoder-notify.com/"),
-        );
+        let mut embed = serenity::CreateEmbed::default()
+            .author(CreateEmbedAuthor::new("").name("AtCoder Notify Bot v3").icon_url(ctx.data().avatar_url.as_str()).url("https://atcoder-notify.com/"));
         if lang == "ja" {
-            embed = embed
-                .title("設定変更")
-                .description("コンテストの通知チャンネルを削除しました。");
+            embed = embed.title("設定変更").description("コンテストの通知チャンネルを削除しました。");
         } else {
-            embed = embed
-                .title("Settings Changed")
-                .description("Contest notification channels have been removed.");
+            embed = embed.title("Settings Changed").description("Contest notification channels have been removed.");
         }
         poise::CreateReply::default().embed(embed).ephemeral(true)
     };
