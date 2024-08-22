@@ -27,6 +27,7 @@ use scraping::contests::update_contests;
 use scraping::get_ranking::get_ranking;
 use scraping::get_submission::get_submission;
 use scraping::get_user_list;
+use scraping::notify;
 use sha2::Digest;
 use std::env;
 use std::sync::Arc;
@@ -87,6 +88,7 @@ async fn interval(ctx: serenity::Context) {
             log::info!("分ごとの処理");
             get_ranking(&pool, &cookie_store, &ctx).await;
             get_ratings(&cookie_store, &pool, &ctx, false).await;
+            notify::notify(&pool, &ctx).await;
             log::info!("分ごとの処理終了");
             last_minute = now.minute();
         }

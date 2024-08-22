@@ -5,4 +5,5 @@ pub mod get_ranking;
 pub mod get_submission;
 pub mod get_user_list;
 pub mod login;
+pub mod notify;
 pub mod ranking_types;

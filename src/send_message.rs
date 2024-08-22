@@ -12,6 +12,7 @@ struct Contest {
     duration: i32,
     rating_range_raw: String,
     name: String,
+    contest_id: String,
 }
 
 pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
@@ -19,12 +20,13 @@ pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
     let mut conn = pool.get_conn().unwrap();
     let contests: Vec<Contest> = conn
         .query_map(
-            "select start_time,duration,rating_range_raw,name from contests",
-            |(start_time, duration, rating_range_raw, name)| Contest {
+            "select contest_id,start_time,duration,rating_range_raw,name from contests",
+            |(start_time, duration, rating_range_raw, name, contest_id)| Contest {
                 start_time,
                 duration,
                 rating_range_raw,
                 name,
+                contest_id,
             },
         )
         .unwrap();
@@ -47,6 +49,7 @@ pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                 let end_time = start_time + offset;
                 let embed = CreateEmbed::new()
                     .title(&contest.name)
+                    .url(contest.contest_id.clone())
                     .field("開催時間", format!("<t:{0}:f>(<t:{0}:R>)", start_time.timestamp()), false)
                     .field("終了時間", format!("<t:{0}:f>(<t:{0}:R>)", end_time.timestamp()), false)
                     .field("Rated対象", format!("`{}`", contest.rating_range_raw), false);
