@@ -39,7 +39,9 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) {
         LEFT JOIN
             atcoder_user_ratings
         ON
-            users.atcoder_username = atcoder_user_ratings.user_name",
+            users.atcoder_username = atcoder_user_ratings.user_name AND users.discord_id IS NOT NULL
+        WHERE
+            users.discord_id IS NOT NULL",
         )
         .unwrap();
     log::info!("add to BTreeMap: {:?}", start_time.elapsed());

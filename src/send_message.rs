@@ -20,8 +20,8 @@ pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
     let mut conn = pool.get_conn().unwrap();
     let contests: Vec<Contest> = conn
         .query_map(
-            "select contest_id,start_time,duration,rating_range_raw,name from contests",
-            |(start_time, duration, rating_range_raw, name, contest_id)| Contest {
+            "select contest_id,duration,start_time,rating_range_raw,name from contests",
+            |(contest_id, duration, start_time, rating_range_raw, name)| Contest {
                 start_time,
                 duration,
                 rating_range_raw,

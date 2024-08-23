@@ -2,6 +2,7 @@ use crate::utils::{
     svg::create_table::{self, Align, RatingCustom, RatingType, Row, TableRowsRating, TableRowsText, TextConfig},
     svg_to_png::svg_to_png,
 };
+use core::f64;
 use serde_json;
 use std::sync::Arc;
 use std::{
@@ -45,6 +46,8 @@ struct User {
 }
 
 static MEMO: OnceLock<BTreeMap<Float, f64>> = OnceLock::new();
+const S: f64 = 724.4744301;
+const R: f64 = 0.8271973364;
 
 fn ordinal_suffix(n: i32) -> String {
     let suffix = match n % 10 {
@@ -54,10 +57,6 @@ fn ordinal_suffix(n: i32) -> String {
         _ => "th",
     };
     format!("{}{}", n, suffix)
-}
-
-fn g(x: f64) -> f64 {
-    2.0_f64.powf(x / 800.0)
 }
 
 pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: &serenity::Context) {
@@ -142,6 +141,32 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
         let url = format!("https://{}/standings/json", i.contest_id);
         let json = client.get(url).send().unwrap().text().unwrap_or_default();
         let data: StandingsJson = serde_json::from_str(&json).unwrap_or_default();
+        let mut last_rank = 0;
+        let mut server_rank = 1;
+        let mut rank_people = 0;
+        let mut rank_map: BTreeMap<i32, i32> = BTreeMap::new();
+        let mut rank_people_map: BTreeMap<i32, i32> = BTreeMap::new();
+        let mut rank = 1;
+        let mut now_rank = 1;
+        let mut on_rank_people = 0;
+        for users in &data.StandingsData {
+            let mut is_rated = users.IsRated;
+            if i.contest_type == 1 {
+                is_rated = users.IsRated && users.TotalResult.Count > 0
+            }
+            if is_rated {
+                if users.Rank != now_rank {
+                    rank += on_rank_people;
+                    on_rank_people = 0;
+                    now_rank = users.Rank;
+                }
+                on_rank_people += 1;
+                rank_map.insert(users.Rank, rank);
+                rank_people_map.insert(users.Rank, on_rank_people);
+            } else {
+                rank_map.insert(users.Rank, rank);
+            }
+        }
         let empty_set: BTreeSet<String> = BTreeSet::new();
         for (channel_id, server_id) in &channels {
             if channel_id != "null" {
@@ -153,28 +178,6 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                 let mut old_rate_list = vec![];
                 let mut new_rate_list = vec![];
                 let mut rate_diff_list = vec![];
-                let mut last_rank = 0;
-                let mut server_rank = 1;
-                let mut rank_people = 0;
-                let mut rank_map: BTreeMap<i32, i32> = BTreeMap::new();
-                let mut rank_people_map: BTreeMap<i32, i32> = BTreeMap::new();
-                let mut rank = 1;
-                let mut now_rank = 1;
-                let mut on_rank_people = 0;
-                for users in &data.StandingsData {
-                    if users.IsRated {
-                        if users.Rank != now_rank {
-                            rank += on_rank_people;
-                            on_rank_people = 0;
-                            now_rank = users.Rank;
-                        }
-                        on_rank_people += 1;
-                        rank_map.insert(users.Rank, rank);
-                        rank_people_map.insert(users.Rank, on_rank_people);
-                    } else {
-                        rank_map.insert(users.Rank, rank);
-                    }
-                }
                 for users in &data.StandingsData {
                     if user_list.contains(&users.UserScreenName.to_lowercase()) {
                         if last_rank != users.Rank {
@@ -188,17 +191,21 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                         }
                         let mut r = 10000.0;
                         let mut l = -10000.0;
-                        while r - l > 0.1 {
+                        while r - l > 0.5 {
                             let x = (r + l) / 2.0;
-                            let mut sum = 0.0;
+                            let mut sum = 0.5;
                             let contains_key = memo_data.contains_key(&Float::try_new(x).unwrap());
                             if !contains_key {
                                 for j in &data.StandingsData {
-                                    if j.IsRated {
+                                    let mut is_rated = j.IsRated;
+                                    if i.contest_type == 1 {
+                                        is_rated = j.IsRated && j.TotalResult.Count > 0
+                                    }
+                                    if is_rated {
                                         let aperf = users_to_aperf.get(&j.UserScreenName.to_lowercase()).unwrap_or(match i.rating_type {
-                                            2 => &(1200.0, 1200.0, 0, 0),
+                                            2 => &(1200.0, 1000.0, 0, 0),
                                             1 => &(1000.0, 1000.0, 0, 0),
-                                            _ => &(800.0, 800.0, 0, 0),
+                                            _ => &(800.0, 1000.0, 0, 0),
                                         });
                                         let aperf = match i.contest_type {
                                             0 => match aperf.2 {
@@ -210,11 +217,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                                                 _ => aperf.0,
                                             },
                                             _ => match aperf.3 {
-                                                0 => match i.rating_type {
-                                                    2 => 1200.0,
-                                                    1 => 1000.0,
-                                                    _ => 800.0,
-                                                },
+                                                0 => 1000.0,
                                                 _ => aperf.1,
                                             },
                                         };
@@ -225,7 +228,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             } else {
                                 sum = *memo_data.get(&Float::try_new(x).unwrap()).unwrap();
                             }
-                            if sum < rank - 0.5 {
+                            if rank > sum {
                                 r = x;
                             } else {
                                 l = x;
@@ -240,7 +243,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             perf = i.rating_range_end as f64 + 401.0
                         }
 
-                        let performance_list: Vec<i32> = conn
+                        let mut performance_list: Vec<i32> = conn
                             .exec(
                                 "SELECT
                                            LEAST(contests.rating_range_end + 401,user_ratings.performance)
@@ -258,20 +261,46 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                                 },
                             )
                             .unwrap();
-                        let mut up = 0.9 * 2.0 * g(perf);
-                        let mut down = 0.9;
-                        let mut count = 2;
-                        for i in &performance_list {
-                            up += 2.0 * g(*i as f64) * 0.9_f64.powf(count as f64);
-                            down += 0.9_f64.powf(count as f64);
-                            count += 1;
-                        }
-                        let mut rate = f64::log2(up / down) * 800.0
-                            - ((f64::sqrt(1.0 - 0.81_f64.powi((performance_list.len() + 1) as i32))
-                                / (1.0 - 0.9_f64.powi((performance_list.len() + 1) as i32)))
-                                - 1.0)
-                                / (f64::sqrt(19.0) - 1.0)
-                                * 1200.0;
+                        performance_list.push(perf as i32);
+
+                        let mut rate = if i.contest_type == 0 {
+                            performance_list.reverse();
+
+                            let rated_contests = performance_list.len() as i32;
+
+                            let numerator: f64 = (1..=rated_contests)
+                                .map(|i| {
+                                    let performance = performance_list[(i - 1) as usize];
+                                    2.0_f64.powf(performance as f64 / 800.0) * 0.9_f64.powi(i)
+                                })
+                                .sum();
+
+                            let denominator: f64 = (1..=rated_contests).map(|i| 0.9_f64.powi(i)).sum();
+
+                            800.0 * (numerator / denominator).log2()
+                                - ((f64::sqrt(1.0 - 0.81_f64.powi((performance_list.len() + 1) as i32))
+                                    / (1.0 - 0.9_f64.powi((performance_list.len() + 1) as i32)))
+                                    - 1.0)
+                                    / (f64::sqrt(19.0) - 1.0)
+                                    * 1200.0
+                        } else {
+                            let mut qs = vec![];
+                            for i in performance_list {
+                                for j in 1..=100 {
+                                    qs.push(i as f64 - S * (j as f64).log(f64::consts::E));
+                                }
+                            }
+                            qs.sort_by(|a, b| b.partial_cmp(a).unwrap());
+                            let mut numerator: f64 = 0.0;
+                            let mut denominator: f64 = 0.0;
+                            for i in (0..=99).rev() {
+                                numerator = numerator * R + qs[i];
+                                denominator = denominator * R + 1.0;
+                            }
+
+                            numerator / denominator
+                        };
+
                         if rate <= 400.0 {
                             rate = 400.0 / (f64::exp((400.0 - rate) / 400.0))
                         }

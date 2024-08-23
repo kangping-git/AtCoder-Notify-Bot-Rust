@@ -34,7 +34,7 @@ pub async fn notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
         .filter(|contest| {
             let start_time = chrono::DateTime::parse_from_str(&contest.start_time, "%Y-%m-%d %H:%M:%S%z").unwrap();
             let offset = chrono::Duration::hours(1);
-            start_time.date_naive() >= chrono::Local::now().date_naive() - offset
+            start_time.date_naive() - offset <= chrono::Local::now().date_naive()
         })
         .collect();
     if !contests.is_empty() {
@@ -48,18 +48,23 @@ pub async fn notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                 let end_time = start_time + offset;
                 let embed_ja = CreateEmbed::new()
                     .title(format!("{}が一時間後に開催されます", contest.name))
-                    .url(contest.contest_id.clone())
+                    .url(format!("https://{}", &contest.contest_id))
                     .field("開催時間", format!("<t:{0}:f>(<t:{0}:R>)", start_time.timestamp()), false)
                     .field("終了時間", format!("<t:{0}:f>(<t:{0}:R>)", end_time.timestamp()), false)
                     .field("Rated対象", format!("`{}`", contest.rating_range_raw), false);
                 let embed_en = CreateEmbed::new()
                     .title(format!("{} will be held in an hour", contest.name))
-                    .url(contest.contest_id.clone())
+                    .url(format!("https://{}", &contest.contest_id))
                     .field("Start time", format!("<t:{0}:f>(<t:{0}:R>)", start_time.timestamp()), false)
                     .field("End time", format!("<t:{0}:f>(<t:{0}:R>)", end_time.timestamp()), false)
                     .field("Rated target", format!("`{}`", contest.rating_range_raw), false);
                 embed_vec_ja.push(embed_ja);
                 embed_vec_en.push(embed_en);
+                conn.exec_drop(
+                    "UPDATE contests SET is_do_notify=1 WHERE contest_id=:contest_id",
+                    params! {"contest_id" => &contest.contest_id},
+                )
+                .unwrap();
             }
             (CreateMessage::new().add_embeds(embed_vec_ja), CreateMessage::new().add_embeds(embed_vec_en))
         };
@@ -78,9 +83,9 @@ pub async fn notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
 
                 let channel_id = ChannelId::new(i.1.parse::<u64>().unwrap());
                 if lang == "ja" {
-                    channel_id.send_message(&ctx.http, response_ja.clone()).await.unwrap();
+                    let _ = channel_id.send_message(&ctx.http, response_ja.clone()).await;
                 } else {
-                    channel_id.send_message(&ctx.http, response_en.clone()).await.unwrap();
+                    let _ = channel_id.send_message(&ctx.http, response_en.clone()).await;
                 }
             }
         }

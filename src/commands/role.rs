@@ -75,7 +75,7 @@ pub async fn create_roles(ctx: Context<'_>) -> Result<(), Error> {
             atcoder_user_ratings
         ON
             users.atcoder_username = atcoder_user_ratings.user_name
-        WHERE server_id=:server_id",
+        WHERE users.server_id=:server_id AND users.discord_id IS NOT NULL",
         params! {"server_id" => guild_id},
     )?;
 

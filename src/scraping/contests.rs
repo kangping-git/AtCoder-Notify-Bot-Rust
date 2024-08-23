@@ -262,7 +262,7 @@ pub async fn update_contests(pool: &Arc<Mutex<Pool>>) {
     log::info!("Start Database Insert");
     let pool = pool.lock().await;
     let mut conn = pool.get_conn().unwrap();
-    let contests: Vec<ContestDataTuple> = conn.query(r"SELECT * FROM contests").unwrap();
+    let contests: Vec<ContestDataTuple> = conn.query(r"SELECT `id`,  `contest_id`,  `name`,  `start_time`,  `duration`,  `url`,  `contest_type`,  `rating_type`,  `rating_range_start`,  `rating_range_end`,  `rating_range_raw`,  `get_user_ratings_flag` FROM contests").unwrap();
     let mut contests_list: HashSet<String> = HashSet::new();
     for i in contests {
         contests_list.insert(i.1);

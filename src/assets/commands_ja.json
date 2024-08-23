@@ -10,18 +10,12 @@
     {
         "name": "current_contests",
         "usage": "/atcoder contest current",
-        "description": [
-            "現在進行中のコンテストの詳細を表示します。",
-            "このコマンドは、ライブで進行中のコンテストの最新情報を提供します。"
-        ]
+        "description": ["現在進行中のコンテストの詳細を表示します。", "このコマンドは、ライブで進行中のコンテストの最新情報を提供します。"]
     },
     {
         "name": "past_contests",
         "usage": "/atcoder contest past",
-        "description": [
-            "過去のAtCoderコンテストの情報を取得します。",
-            "このコマンドを使用すると、既に終了したコンテストの詳細を確認できます。"
-        ]
+        "description": ["過去のAtCoderコンテストの情報を取得します。", "このコマンドを使用すると、既に終了したコンテストの詳細を確認できます。"]
     },
     {
         "name": "rating",
@@ -34,10 +28,7 @@
     {
         "name": "rating_history",
         "usage": "/atcoder rating history {username} {rating_type}",
-        "description": [
-            "指定されたユーザーのレーティング履歴を表示します。",
-            "このコマンドを使用すると、特定のユーザーのレーティングの変遷を確認できます。"
-        ]
+        "description": ["指定されたユーザーのレーティング履歴を表示します。", "このコマンドを使用すると、特定のユーザーのレーティングの変遷を確認できます。"]
     },
     {
         "name": "set_notification_contest",
@@ -45,31 +36,26 @@
         "description": [
             "AtCoderコンテスト情報の通知を行うチャンネルを設定します。",
             "このコマンドを使用すると、今後のコンテストの詳細が投稿される特定のチャンネルを指定できます。"
-        ]
+        ],
+        "is_owner_only": true
     },
     {
         "name": "set_notification_submission",
         "usage": "/atcoder set-notification submission {channel}",
-        "description": [
-            "ユーザーの提出情報の通知を行うチャンネルを設定します。",
-            "このコマンドは、ユーザーの提出更新情報が送信されるチャンネルを設定します。"
-        ]
+        "description": ["ユーザーの提出情報の通知を行うチャンネルを設定します。", "このコマンドは、ユーザーの提出更新情報が送信されるチャンネルを設定します。"],
+        "is_owner_only": true
     },
     {
         "name": "unset_notification_contest",
         "usage": "/atcoder unset-notification contest",
-        "description": [
-            "コンテスト通知の設定を解除します。",
-            "このコマンドは、以前に指定されたチャンネルでのコンテスト情報の通知を無効にします。"
-        ]
+        "description": ["コンテスト通知の設定を解除します。", "このコマンドは、以前に指定されたチャンネルでのコンテスト情報の通知を無効にします。"],
+        "is_owner_only": true
     },
     {
         "name": "unset_notification_submission",
         "usage": "/atcoder unset-notification submission",
-        "description": [
-            "ユーザー提出情報の通知設定を解除します。",
-            "このコマンドは、以前に指定されたチャンネルでのユーザー提出の通知を無効にします。"
-        ]
+        "description": ["ユーザー提出情報の通知設定を解除します。", "このコマンドは、以前に指定されたチャンネルでのユーザー提出の通知を無効にします。"],
+        "is_owner_only": true
     },
     {
         "name": "show_notification",
@@ -138,9 +124,7 @@
     {
         "name": "set_language",
         "usage": "/server set-language {language_code}",
-        "description": [
-            "サーバーのデフォルト言語を設定します。",
-            "このコマンドを使用して、サーバーで使用される言語を変更できます。"
-        ]
+        "description": ["サーバーのデフォルト言語を設定します。", "このコマンドを使用して、サーバーで使用される言語を変更できます。"],
+        "is_owner_only": true
     }
 ]

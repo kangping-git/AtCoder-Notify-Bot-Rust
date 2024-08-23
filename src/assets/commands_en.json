@@ -18,10 +18,7 @@
     {
         "name": "past_contests",
         "usage": "/atcoder contest past",
-        "description": [
-            "Retrieve information on past AtCoder contests.",
-            "Use this command to review the contests that have already concluded."
-        ]
+        "description": ["Retrieve information on past AtCoder contests.", "Use this command to review the contests that have already concluded."]
     },
     {
         "name": "rating",
@@ -40,20 +37,13 @@
         ]
     },
     {
-        "name": "latest_submission",
-        "usage": "/atcoder submission latest {username}",
-        "description": [
-            "Display the latest submission by a specified AtCoder user.",
-            "This command shows the most recent submission made by the given user, including details about the problem and submission time."
-        ]
-    },
-    {
         "name": "set_notification_contest",
         "usage": "/atcoder set-notification contest {channel}",
         "description": [
             "Set the channel for notifications about AtCoder contest information.",
             "This command allows you to designate a specific channel where upcoming contest details will be posted."
-        ]
+        ],
+        "is_owner_only": true
     },
     {
         "name": "set_notification_submission",
@@ -61,7 +51,8 @@
         "description": [
             "Set the channel for notifications about user submissions.",
             "This command configures the channel where updates on user submissions will be sent."
-        ]
+        ],
+        "is_owner_only": true
     },
     {
         "name": "unset_notification_contest",
@@ -69,7 +60,8 @@
         "description": [
             "Remove the channel set for contest notifications.",
             "This command disables the notifications for contest information in the previously designated channel."
-        ]
+        ],
+        "is_owner_only": true
     },
     {
         "name": "unset_notification_submission",
@@ -77,7 +69,8 @@
         "description": [
             "Remove the channel set for user submission notifications.",
             "This command disables notifications for user submissions in the previously designated channel."
-        ]
+        ],
+        "is_owner_only": true
     },
     {
         "name": "show_notification",
@@ -122,10 +115,7 @@
     {
         "name": "delete_account",
         "usage": "/atcoder delete-account {atcoder_username}",
-        "description": [
-            "Delete the registration of a specified AtCoder account.",
-            "Use this command to remove an AtCoder account from your registration list."
-        ]
+        "description": ["Delete the registration of a specified AtCoder account.", "Use this command to remove an AtCoder account from your registration list."]
     },
     {
         "name": "show_accounts",
@@ -146,9 +136,7 @@
     {
         "name": "set_language",
         "usage": "/server set-language {language_code}",
-        "description": [
-            "Set the default language for the server.",
-            "Use this command to change the language used on the server."
-        ]
+        "description": ["Set the default language for the server.", "Use this command to change the language used on the server."],
+        "is_owner_only": true
     }
 ]
