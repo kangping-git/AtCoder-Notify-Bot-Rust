@@ -46,40 +46,42 @@ pub async fn link_account(
         r"SELECT role_color,role_id FROM roles WHERE guild_id=:server_id",
         params! {"server_id" => &guild_id},
     )?;
-    let roles_map: BTreeMap<i8, u64> = roles.iter().cloned().collect();
+    if !roles.is_empty() {
+        let roles_map: BTreeMap<i8, u64> = roles.iter().cloned().collect();
 
-    let guild = ctx.guild_id().unwrap();
-    let role_ids: Vec<u64> = roles.iter().map(|x| x.1).collect();
-    let user = UserId::new(discord_user.id.get());
-    let member = guild.member(ctx.http(), user).await?;
-    for i in &member.roles {
-        if role_ids.contains(&i.get()) {
-            let user = UserId::new(discord_user.id.get());
-            let member = guild.member(ctx.http(), user).await?;
-            member.remove_role(ctx.http(), *i).await?;
+        let guild = ctx.guild_id().unwrap();
+        let role_ids: Vec<u64> = roles.iter().map(|x| x.1).collect();
+        let user = UserId::new(discord_user.id.get());
+        let member = guild.member(ctx.http(), user).await?;
+        for i in &member.roles {
+            if role_ids.contains(&i.get()) {
+                let user = UserId::new(discord_user.id.get());
+                let member = guild.member(ctx.http(), user).await?;
+                member.remove_role(ctx.http(), *i).await?;
+            }
         }
-    }
 
-    let ratings: Vec<i64> = conn
-        .exec(
-            "SELECT algo_rating FROM atcoder_user_ratings WHERE user_name=:user_name",
-            params! {
-                "user_name" => &atcoder_user
-            },
-        )
-        .unwrap();
-    let rating = if ratings.is_empty() { 0 } else { ratings[0] };
-    let user = UserId::new(discord_user.id.get());
-    let member = guild.member(ctx.http(), user).await?;
-    if rating == 0 {
-        member.add_role(ctx.http(), RoleId::new(*roles_map.get(&0).unwrap_or(&0))).await?;
-    } else {
-        member
-            .add_role(
-                ctx.http(),
-                RoleId::new(*roles_map.get(&(std::cmp::min(8, rating / 400 + 1) as i8)).unwrap_or(&0)),
+        let ratings: Vec<i64> = conn
+            .exec(
+                "SELECT algo_rating FROM atcoder_user_ratings WHERE user_name=:user_name",
+                params! {
+                    "user_name" => &atcoder_user
+                },
             )
-            .await?;
+            .unwrap();
+        let rating = if ratings.is_empty() { 0 } else { ratings[0] };
+        let user = UserId::new(discord_user.id.get());
+        let member = guild.member(ctx.http(), user).await?;
+        if rating == 0 {
+            member.add_role(ctx.http(), RoleId::new(*roles_map.get(&0).unwrap_or(&0))).await?;
+        } else {
+            member
+                .add_role(
+                    ctx.http(),
+                    RoleId::new(*roles_map.get(&(std::cmp::min(8, rating / 400 + 1) as i8)).unwrap_or(&0)),
+                )
+                .await?;
+        }
     }
 
     let response = {
