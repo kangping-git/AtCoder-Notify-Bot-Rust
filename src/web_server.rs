@@ -54,7 +54,7 @@ async fn home() -> impl Responder {
     HttpResponse::Ok().content_type(ContentType::html()).body(include_str!("../static/pages/src/index.html"))
 }
 #[get("/output.css")]
-async fn outputcss() -> impl Responder {
+async fn output_css() -> impl Responder {
     HttpResponse::Ok().content_type(ContentType(mime::TEXT_CSS)).body(include_str!("../static/pages/src/output.css"))
 }
 
@@ -201,7 +201,7 @@ pub async fn start() {
             .service(get_user_image)
             .service(home)
             .service(icon)
-            .service(outputcss)
+            .service(output_css)
             .default_service(web::to(default_handler))
     })
     .bind(("127.0.0.1", port.parse::<u16>().unwrap()))

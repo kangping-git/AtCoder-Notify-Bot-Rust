@@ -79,18 +79,32 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
         }
         for i in user_set {
             if submission_map.contains_key(&i) {
+                let mut submissions: Vec<String> = conn
+                    .exec(
+                        "SELECT problem_id FROM submission_data WHERE user_id=:used_id",
+                        params! {
+                            "used_id" => &i
+                        },
+                    )
+                    .unwrap();
+
                 let url: String = format!(
                     "https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user={}&from_second={}",
                     i,
                     submission_map.get(&i).unwrap()
                 );
-                log::info!("{}", url);
+
+                println!("{}", url);
+
                 let response = client.get(url).send().await.unwrap();
                 let text = response.text().await.unwrap_or_default();
                 let mut last: i64 = *submission_map.get(&i).unwrap();
                 let json: Vec<Submission> = serde_json::from_str(&text).unwrap();
                 for j in json {
                     if j.result == "AC" {
+                        if submissions.contains(&j.problem_id) {
+                            continue;
+                        }
                         let mut diff_text = "null".to_string();
                         let diff = diff.get(&j.problem_id);
                         if let Some(diff) = diff {
@@ -143,6 +157,15 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                                 let _ = channel.send_message(&ctx.http, response_ja.clone()).await;
                             }
                         }
+                        conn.exec_drop(
+                            "INSERT INTO submission_data (user_id, problem_id) VALUES (:user_id, :problem_id)",
+                            params! {
+                                "user_id" => j.user_id,
+                                "problem_id" => &j.problem_id
+                            },
+                        )
+                        .unwrap();
+                        submissions.push(j.problem_id.clone())
                     }
                 }
                 conn.exec_drop(
@@ -157,13 +180,13 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                 conn.exec_drop(
                     "INSERT INTO submissions (username) VALUES (:username)",
                     params! {
-                        "username" => i
+                        "username" => i,
                     },
                 )
                 .unwrap();
             }
             sleep(Duration::from_millis(500)).await;
         }
-        sleep(Duration::from_secs(30)).await;
+        sleep(Duration::from_secs(1)).await;
     }
 }
