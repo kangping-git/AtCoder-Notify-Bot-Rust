@@ -70,6 +70,8 @@ async fn interval(ctx: serenity::Context) {
     tokio::spawn(async move {
         get_submission(&pool_clone, &ctx_clone).await;
     });
+    let mut activity_text_type = 0;
+    let mut count = 0;
     loop {
         let now = chrono::Local::now();
         if date != now.date_naive() {
@@ -92,7 +94,18 @@ async fn interval(ctx: serenity::Context) {
             log::info!("分ごとの処理終了");
             last_minute = now.minute();
         }
-
+        if count == 0 {
+            let activity_text = match activity_text_type {
+                0 => "*/help*でお待ちしています".to_string(),
+                1 => format!("{}鯖({}ユーザ)", ctx.cache.guild_count(), ctx.cache.user_count()),
+                _ => "".to_string(),
+            };
+            activity_text_type += 1;
+            activity_text_type %= 2;
+            ctx.set_activity(Option::from(ActivityData::playing(activity_text)));
+            count = 30;
+        }
+        count -= 1;
         sleep(Duration::from_millis(100)).await;
     }
 }
@@ -201,7 +214,6 @@ async fn main() {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 tokio::spawn(interval(ctx.clone()));
                 log::info!("Bot started as \"{}\"", ready.user.name);
-                ctx.set_activity(Option::from(ActivityData::playing("元気にAtCoderを監視中")));
                 Ok(Data {
                     conn: Arc::new(Mutex::new(pool)),
                     avatar_url: ready.user.avatar_url().unwrap(),

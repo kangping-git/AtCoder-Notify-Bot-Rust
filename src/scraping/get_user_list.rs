@@ -104,7 +104,7 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) -> Result<
             heuristic_aperf = a / b;
             heuristic_contests = rating_history.len();
         }
-        user_rating_map.insert(i.clone(), algo_rating);
+        user_rating_map.insert(i.clone().to_lowercase(), algo_rating);
         transaction
             .exec_drop(
                 "insert into atcoder_user_ratings (user_name, algo_aperf, algo_rating, algo_contests, heuristic_aperf, heuristic_rating, heuristic_contests)
@@ -122,7 +122,7 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) -> Result<
             .unwrap();
     }
     for i in atcoder_users_vec {
-        let ur = user_rating_map.get(&i.1).unwrap_or(&0);
+        let ur = user_rating_map.get(&i.1.to_lowercase()).unwrap_or(&0);
         let old_rating_color = if i.3 == 0 { 0 } else { std::cmp::min(8, i.3 / 400 + 1) };
         let new_rating_color = if ur == &0 { 0 } else { std::cmp::min(8, ur / 400 + 1) };
         if old_rating_color != new_rating_color {
