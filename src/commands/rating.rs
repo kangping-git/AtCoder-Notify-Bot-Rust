@@ -184,7 +184,7 @@ pub async fn rating_history(
             let mut x_max = x_max.unwrap();
 
             let caption = "Rating History";
-            let font = ("sans-serif", 40);
+            let font = ("Segoe UI", 40);
 
             let mut point_series_vec = vec![];
             let mut line_series_vec = vec![];
@@ -235,10 +235,10 @@ pub async fn rating_history(
                             EmptyElement::at((*x, *y))
                                 + Circle::new(
                                     (0, 0),
-                                    6,
+                                    3,
                                     ShapeStyle::from(&circle_bg_colors[std::cmp::min(y / 400, (circle_bg_colors.len() - 1) as i32) as usize]).filled(),
                                 )
-                                + Circle::new((0, 0), 6, WHITE.stroke_width(2))
+                                + Circle::new((0, 0), 3, WHITE.stroke_width(2))
                         })
                         .collect::<Vec<_>>();
                     point_series_vec.push(point_series);
@@ -248,8 +248,8 @@ pub async fn rating_history(
                         .zip(ys.iter())
                         .map(|(x, y)| {
                             EmptyElement::at((*x, *y))
-                                + Circle::new((0, 0), 6, HSLColor(idx as f64 / user_list.len() as f64, 1.0, 0.5).filled())
-                                + Circle::new((0, 0), 6, TRANSPARENT)
+                                + Circle::new((0, 0), 3, HSLColor(idx as f64 / user_list.len() as f64, 1.0, 0.5).filled())
+                                + Circle::new((0, 0), 3, TRANSPARENT)
                         })
                         .collect::<Vec<_>>();
                     point_series_vec.push(point_series);
@@ -310,7 +310,14 @@ pub async fn rating_history(
             for i in point_series_vec {
                 chart.draw_series(i)?;
             }
-            chart.configure_series_labels().border_style(BLACK).background_style(WHITE.mix(0.8)).draw().unwrap();
+            chart
+                .configure_series_labels()
+                .position(SeriesLabelPosition::UpperLeft)
+                .border_style(BLACK)
+                .background_style(WHITE.mix(0.8))
+                .label_font(("Segoe UI", 20))
+                .draw()
+                .unwrap();
         }
 
         let img: RgbImage = ImageBuffer::from_raw(image_width as u32, image_height as u32, buffer).expect("Failed to create image buffer");
