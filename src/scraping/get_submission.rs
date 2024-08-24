@@ -187,6 +187,6 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
             }
             sleep(Duration::from_millis(500)).await;
         }
-        sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_secs(30)).await;
     }
 }

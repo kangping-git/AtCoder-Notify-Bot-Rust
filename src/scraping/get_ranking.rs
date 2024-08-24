@@ -4,11 +4,8 @@ use crate::utils::{
 };
 use core::f64;
 use serde_json;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::OnceLock,
-};
 
 use mysql::prelude::*;
 use mysql::*;
@@ -45,7 +42,6 @@ struct User {
     server_id: i64,
 }
 
-static MEMO: OnceLock<BTreeMap<Float, f64>> = OnceLock::new();
 const S: f64 = 724.4744301;
 const R: f64 = 0.8271973364;
 
@@ -60,10 +56,6 @@ fn ordinal_suffix(n: i32) -> String {
 }
 
 pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: &serenity::Context) -> Result<()> {
-    let mut memo_data = Clone::clone(MEMO.get_or_init(|| {
-        let map: BTreeMap<Float, f64> = BTreeMap::new();
-        map
-    }));
     let pool_temp = pool.lock().await;
     let mut conn = pool_temp.get_conn().unwrap();
     let contests: Vec<Contest> = conn
@@ -138,6 +130,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
 
     let client = Client::builder().cookie_store(true).cookie_provider(Arc::clone(cookie_store)).build().unwrap();
     for i in &contests {
+        let mut memo_data: BTreeMap<Float, f64> = BTreeMap::new();
         let url = format!("https://{}/standings/json", i.contest_id);
         let json = client.get(url).send().unwrap().text().unwrap_or_default();
         let data: StandingsJson = serde_json::from_str(&json).unwrap_or_default();
@@ -165,6 +158,11 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                 rank_people_map.insert(users.Rank, on_rank_people);
             } else {
                 rank_map.insert(users.Rank, rank);
+                if on_rank_people == 0 {
+                    rank_people_map.insert(users.Rank, 1);
+                } else {
+                    rank_people_map.insert(users.Rank, on_rank_people);
+                }
             }
         }
         let empty_set: BTreeSet<String> = BTreeSet::new();
@@ -185,12 +183,9 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             last_rank = users.Rank;
                             rank_people = 0;
                         }
-                        let mut rank = (*rank_map.get(&users.Rank).unwrap() as f64) + ((rank_people_map.get(&users.Rank).unwrap() - 1) as f64) / 2.0;
-                        if rank_people_map.get(&users.Rank).unwrap() == &0 {
-                            rank = *rank_map.get(&users.Rank).unwrap() as f64;
-                        }
-                        let mut r = 10000.0;
-                        let mut l = -10000.0;
+                        let rank = (*rank_map.get(&users.Rank).unwrap() as f64) + ((rank_people_map.get(&users.Rank).unwrap() - 1) as f64) / 2.0;
+                        let mut r = 6144.0;
+                        let mut l = -2048.0;
                         while r - l > 0.5 {
                             let x = (r + l) / 2.0;
                             let mut sum = 0.5;
