@@ -134,9 +134,6 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
         let url = format!("https://{}/standings/json", i.contest_id);
         let json = client.get(url).send().unwrap().text().unwrap_or_default();
         let data: StandingsJson = serde_json::from_str(&json).unwrap_or_default();
-        let mut last_rank = 0;
-        let mut server_rank = 1;
-        let mut rank_people = 0;
         let mut rank_map: BTreeMap<i32, i32> = BTreeMap::new();
         let mut rank_people_map: BTreeMap<i32, i32> = BTreeMap::new();
         let mut rank = 1;
@@ -168,6 +165,10 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
         let empty_set: BTreeSet<String> = BTreeSet::new();
         for (channel_id, server_id) in &channels {
             if channel_id != "null" {
+                let mut last_rank = 0;
+                let mut server_rank = 1;
+                let mut rank_people = 0;
+
                 let user_list = contest_users_map.get(server_id).unwrap_or(Clone::clone(&&empty_set));
                 let mut ranks = vec![];
                 let mut server_ranks = vec![];
