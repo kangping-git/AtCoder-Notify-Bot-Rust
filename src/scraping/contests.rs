@@ -246,7 +246,7 @@ async fn get_past_contest_page(page: i32, get_pages: bool) -> GetContestPageResu
 
     GetContestPageResult { pages, contests }
 }
-pub async fn update_contests(pool: &Arc<Mutex<Pool>>) {
+pub async fn update_contests(pool: &Arc<Mutex<Pool>>) -> mysql::Result<()> {
     let first_page = get_contest_page().await;
     let mut contest_vec: Vec<Contest> = first_page.contests;
     sleep(Duration::from_millis(100)).await;
@@ -294,4 +294,5 @@ pub async fn update_contests(pool: &Arc<Mutex<Pool>>) {
             }).unwrap();
         }
     }
+    Ok(())
 }

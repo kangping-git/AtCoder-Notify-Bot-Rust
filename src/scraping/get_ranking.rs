@@ -59,7 +59,7 @@ fn ordinal_suffix(n: i32) -> String {
     format!("{}{}", n, suffix)
 }
 
-pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: &serenity::Context) {
+pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: &serenity::Context) -> Result<()> {
     let mut memo_data = Clone::clone(MEMO.get_or_init(|| {
         let map: BTreeMap<Float, f64> = BTreeMap::new();
         map
@@ -446,4 +446,5 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
             }
         }
     }
+    Ok(())
 }

@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::Mutex;
 
-pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) {
+pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) -> Result<()> {
     let pool = conn.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let start_time = Instant::now();
@@ -151,4 +151,5 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) {
     }
     transaction.commit().unwrap();
     log::info!("add to Database: {:?}", start_time.elapsed());
+    Ok(())
 }

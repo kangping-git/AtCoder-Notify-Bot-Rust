@@ -15,7 +15,7 @@ struct Contest {
     contest_id: String,
 }
 
-pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
+pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) -> Result<()> {
     let pool = pool.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let contests: Vec<Contest> = conn
@@ -76,4 +76,5 @@ pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
         }
     }
     conn.query_drop("delete from messages").unwrap();
+    Ok(())
 }

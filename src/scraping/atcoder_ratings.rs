@@ -62,7 +62,7 @@ struct UserRatingDataFromAtCoder {
     EndTime: String,
 }
 
-pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, ctx: &Context, get_all: bool) {
+pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, ctx: &Context, get_all: bool) -> Result<()> {
     let pool = conn_raw.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let contests: Vec<(String, i8, i32, bool, String, i32)> = conn
@@ -200,6 +200,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
 
     transaction.commit().unwrap();
     if !contests_list.is_empty() {
-        get_user_list::user_list_update(conn_raw, ctx).await;
+        get_user_list::user_list_update(conn_raw, ctx).await.unwrap_or_default();
     }
+    Ok(())
 }
