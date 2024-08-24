@@ -7,6 +7,18 @@ use crate::{Context, Error};
 use mysql::prelude::*;
 use mysql::*;
 
+const ROLE_COLORS_AND_NAMES: [(&str, (u8, u8, u8)); 9] = [
+    ("Black", (64, 64, 64)),
+    ("Gray", (128, 128, 128)),
+    ("Brown", (128, 64, 0)),
+    ("Green", (0, 128, 0)),
+    ("Cyan", (0, 192, 192)),
+    ("Blue", (0, 0, 255)),
+    ("Yellow", (192, 192, 0)),
+    ("Orange", (255, 128, 0)),
+    ("Red", (255, 0, 0)),
+];
+
 #[poise::command(prefix_command, slash_command, subcommands("create_roles"))]
 pub async fn role(_ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
@@ -79,20 +91,9 @@ pub async fn create_roles(ctx: Context<'_>) -> Result<(), Error> {
         params! {"server_id" => guild_id},
     )?;
 
-    let role_colors_and_names: [(&str, (u8, u8, u8)); 9] = [
-        ("Black", (64, 64, 64)),
-        ("Gray", (128, 128, 128)),
-        ("Brown", (128, 64, 0)),
-        ("Green", (0, 128, 0)),
-        ("Cyan", (0, 192, 192)),
-        ("Blue", (0, 0, 255)),
-        ("Yellow", (192, 192, 0)),
-        ("Orange", (255, 128, 0)),
-        ("Red", (255, 0, 0)),
-    ];
     let mut transaction = conn.start_transaction(TxOpts::default()).unwrap();
 
-    for i in role_colors_and_names.iter().enumerate() {
+    for i in ROLE_COLORS_AND_NAMES.iter().enumerate() {
         let (name, color) = i.1;
         let guild = ctx.guild_id().unwrap();
         let output = guild.create_role(ctx.http(), EditRole::new().name(*name).colour(Colour::from_rgb(color.0, color.1, color.2))).await?;
