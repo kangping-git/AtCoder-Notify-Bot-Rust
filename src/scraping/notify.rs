@@ -34,7 +34,7 @@ pub async fn notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
         .filter(|contest| {
             let start_time = chrono::DateTime::parse_from_str(&contest.start_time, "%Y-%m-%d %H:%M:%S%z").unwrap();
             let offset = chrono::Duration::hours(1);
-            start_time.date_naive() - offset <= chrono::Local::now().date_naive()
+            start_time - offset <= chrono::Local::now()
         })
         .collect();
     if !contests.is_empty() {

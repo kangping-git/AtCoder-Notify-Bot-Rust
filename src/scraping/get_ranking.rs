@@ -382,7 +382,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                         data: users_list,
                     }),
                     Row::Rating(TableRowsRating {
-                        title: "perf".to_string(),
+                        title: "Perf".to_string(),
                         width: 300,
                         data: perf_list,
                     }),
