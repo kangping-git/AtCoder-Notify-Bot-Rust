@@ -66,7 +66,10 @@ pub async fn notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) -> Result<
                 )
                 .unwrap();
             }
-            (CreateMessage::new().add_embeds(embed_vec_ja), CreateMessage::new().add_embeds(embed_vec_en))
+            (
+                CreateMessage::new().content("@everyone").add_embeds(embed_vec_ja),
+                CreateMessage::new().content("@everyone").add_embeds(embed_vec_en),
+            )
         };
         for i in channels {
             if i.1 != "null" {
