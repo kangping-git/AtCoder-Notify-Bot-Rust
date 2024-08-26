@@ -1,5 +1,8 @@
 use crate::utils::{
-    svg::create_table::{self, Align, RatingCustom, RatingType, Row, TableRowsRating, TableRowsText, TextConfig},
+    svg::{
+        create_table::{self, Align, RatingCustom, RatingType, Row, TableRowsRating, TableRowsText, TextConfig},
+        create_user_rating::Theme,
+    },
     svg_to_png::svg_to_png,
 };
 use core::f64;
@@ -14,6 +17,9 @@ use reqwest::{blocking::Client, cookie::Jar};
 use tokio::sync::Mutex;
 
 use super::ranking_types::StandingsJson;
+use fontdb::{Database, Query, Source};
+use fontdue::layout::{CoordinateSystem, Layout, TextStyle};
+use fontdue::Font;
 use nutype::nutype;
 
 #[nutype(validate(finite), derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone))]
@@ -56,6 +62,25 @@ fn ordinal_suffix(n: i32) -> String {
 }
 
 pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: &serenity::Context) -> Result<()> {
+    let mut db = Database::new();
+    db.load_system_fonts();
+
+    let query = Query {
+        families: &[fontdb::Family::Name("Lato")],
+        weight: fontdb::Weight::BOLD,
+        ..Default::default()
+    };
+    let id = db.query(&query).unwrap();
+    let face = db.face(id).unwrap();
+    let font_data = match &face.source {
+        Source::Binary(data) => data.as_ref().as_ref(),
+        Source::File(path) => &std::fs::read(path).unwrap_or_else(|_| panic!("Error loading font data from file: {:?}", path)),
+        err => panic!("Error loading font data. {:?}", err),
+    };
+
+    let font = Font::from_bytes(font_data, fontdue::FontSettings::default()).expect("Error loading font");
+    let scale = 70.0;
+
     let pool_temp = pool.lock().await;
     let mut conn = pool_temp.get_conn().unwrap();
     let contests: Vec<Contest> = conn
@@ -174,9 +199,25 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                 let mut server_ranks = vec![];
                 let mut users_list = vec![];
                 let mut perf_list = vec![];
+                let mut total = vec![];
                 let mut old_rate_list = vec![];
                 let mut new_rate_list = vec![];
                 let mut rate_diff_list = vec![];
+
+                let mut points = vec![];
+                let mut task_name_to_index: BTreeMap<&str, usize> = BTreeMap::new();
+                for (index, task) in data.TaskInfo.iter().enumerate() {
+                    points.push(TableRowsText {
+                        title: task.Assignment.clone(),
+                        width: 0,
+                        align: Align::Middle,
+                        data: vec![],
+                    });
+                    task_name_to_index.insert(&task.TaskScreenName, index);
+                }
+
+                let mut total_width = 0;
+                let mut user_width = 0;
                 for users in &data.StandingsData {
                     if user_list.contains(&users.UserScreenName.to_lowercase()) {
                         if last_rank != users.Rank {
@@ -304,10 +345,14 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                         new_rate_list.push(RatingType::Custom(RatingCustom {
                             rating: rate as i32,
                             title: (rate as i32).to_string(),
+                            has_bronze: false,
+                            color_theme: Theme::Dark,
                         }));
                         old_rate_list.push(RatingType::Custom(RatingCustom {
                             rating: users.Rating,
                             title: users.Rating.to_string(),
+                            has_bronze: false,
+                            color_theme: Theme::Dark,
                         }));
 
                         rate_diff_list.push(TextConfig {
@@ -327,7 +372,33 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                         perf_list.push(RatingType::Custom(RatingCustom {
                             rating: perf as i32,
                             title: (perf as i32).to_string(),
+                            has_bronze: false,
+                            color_theme: Theme::Dark,
                         }));
+                        let total_text = if users.TotalResult.Penalty > 0 {
+                            total.push(TextConfig {
+                                value: format!("{}<tspan fill=\"#f33\">({})</tspan>", users.TotalResult.Score, users.TotalResult.Penalty),
+                                color: "white".to_string(),
+                            });
+                            format!("{}({})", users.TotalResult.Score, users.TotalResult.Penalty)
+                        } else {
+                            total.push(TextConfig {
+                                value: format!("{}", users.TotalResult.Score),
+                                color: "white".to_string(),
+                            });
+                            format!("{}", users.TotalResult.Score)
+                        };
+                        let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+                        layout.append(&[font.clone()], &TextStyle::new(&total_text, scale, 0));
+
+                        let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32);
+                        total_width = total_width.max(width as i32);
+
+                        let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+                        layout.append(&[font.clone()], &TextStyle::new(&users.UserScreenName, scale, 0));
+
+                        let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32);
+                        user_width = user_width.max(width as i32);
                         ranks.push(TextConfig {
                             value: ordinal_suffix(users.Rank),
                             color: match users.Rank {
@@ -338,6 +409,33 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             }
                             .to_string(),
                         });
+                        for (key, value) in &task_name_to_index {
+                            let text = if !users.TaskResults.contains_key(*key) {
+                                points[*value].data.push(TextConfig {
+                                    value: "-".to_string(),
+                                    color: "white".to_string(),
+                                });
+                                "-".to_string()
+                            } else if users.TaskResults[*key].Penalty > 0 {
+                                let task = &users.TaskResults[*key];
+                                points[*value].data.push(TextConfig {
+                                    value: format!("{}<tspan fill=\"#f33\">({})</tspan>", task.Score, task.Penalty),
+                                    color: "white".to_string(),
+                                });
+                                format!("{}({})", task.Score, task.Penalty)
+                            } else {
+                                let task = &users.TaskResults[*key];
+                                points[*value].data.push(TextConfig {
+                                    value: format!("{}", task.Score),
+                                    color: "white".to_string(),
+                                });
+                                format!("{}", task.Score)
+                            };
+                            let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+                            layout.append(&[font.clone()], &TextStyle::new(&text, scale, 0));
+                            let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32);
+                            points[*value].width = points[*value].width.max(width as i32);
+                        }
                         server_ranks.push(TextConfig {
                             value: ordinal_suffix(server_rank),
                             color: match server_rank {
@@ -356,49 +454,62 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                                 0 => super::contest_type::ContestType::Algorithm,
                                 _ => super::contest_type::ContestType::Heuristic,
                             },
+                            color_theme: Theme::Dark,
                         }));
                     }
                 }
-                let rows = vec![
-                    Row::Text(TableRowsText {
-                        title: "全体".to_string(),
-                        width: 300,
-                        align: Align::Start,
-                        data: ranks,
-                    }),
-                    Row::Text(TableRowsText {
-                        title: "鯖内".to_string(),
-                        width: 300,
-                        align: Align::Start,
-                        data: server_ranks,
-                    }),
-                    Row::Rating(TableRowsRating {
-                        title: "ユーザー".to_string(),
-                        width: 1300,
-                        data: users_list,
-                    }),
-                    Row::Rating(TableRowsRating {
-                        title: "Perf".to_string(),
-                        width: 300,
-                        data: perf_list,
-                    }),
-                    Row::Rating(TableRowsRating {
-                        title: "Old".to_string(),
-                        width: 300,
-                        data: old_rate_list,
-                    }),
-                    Row::Rating(TableRowsRating {
-                        title: "New".to_string(),
-                        width: 300,
-                        data: new_rate_list,
-                    }),
-                    Row::Text(TableRowsText {
-                        title: "Diff".to_string(),
-                        width: 300,
-                        align: Align::Middle,
-                        data: rate_diff_list,
-                    }),
-                ];
+                let rows = [
+                    vec![
+                        Row::Text(TableRowsText {
+                            title: "All".to_string(),
+                            width: 300,
+                            align: Align::Start,
+                            data: ranks,
+                        }),
+                        Row::Text(TableRowsText {
+                            title: "Server".to_string(),
+                            width: 300,
+                            align: Align::Start,
+                            data: server_ranks,
+                        }),
+                        Row::Rating(TableRowsRating {
+                            title: "User".to_string(),
+                            width: user_width + 120,
+                            data: users_list,
+                        }),
+                        Row::Text(TableRowsText {
+                            title: "Total".to_string(),
+                            width: total_width + 50,
+                            align: Align::Middle,
+                            data: total,
+                        }),
+                    ],
+                    points.iter().map(|x| Row::Text(x.clone())).collect(),
+                    vec![
+                        Row::Rating(TableRowsRating {
+                            title: "Perf".to_string(),
+                            width: 300,
+                            data: perf_list,
+                        }),
+                        Row::Rating(TableRowsRating {
+                            title: "Old".to_string(),
+                            width: 300,
+                            data: old_rate_list,
+                        }),
+                        Row::Rating(TableRowsRating {
+                            title: "New".to_string(),
+                            width: 300,
+                            data: new_rate_list,
+                        }),
+                        Row::Text(TableRowsText {
+                            title: "Diff".to_string(),
+                            width: 300,
+                            align: Align::Middle,
+                            data: rate_diff_list,
+                        }),
+                    ],
+                ]
+                .concat();
                 let svg = create_table::create_table(&Arc::new(Mutex::new(pool_temp.clone())), format!("{} サーバー内ランキング", i.name), rows).await;
                 let channel = ChannelId::new(channel_id.parse::<u64>().unwrap());
                 let response = {

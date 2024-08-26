@@ -6,48 +6,51 @@ use tokio::sync::Mutex;
 
 use crate::scraping::contest_type::ContestType;
 
-use super::create_user_rating::CreateUserRating;
+use super::create_user_rating::{CreateUserRating, Theme};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Row {
     Rating(TableRowsRating),
     Text(TableRowsText),
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Align {
     Start,
     Middle,
     End,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserRating {
+    pub color_theme: Theme,
     pub username: String,
     pub contest_type: ContestType,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RatingCustom {
+    pub color_theme: Theme,
     pub rating: i32,
+    pub has_bronze: bool,
     pub title: String,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum RatingType {
     UserRating(UserRating),
     Custom(RatingCustom),
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TableRowsRating {
     pub title: String,
     pub width: i32,
     pub data: Vec<RatingType>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TextConfig {
     pub value: String,
     pub color: String,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TableRowsText {
     pub title: String,
     pub width: i32,
@@ -55,7 +58,7 @@ pub struct TableRowsText {
     pub data: Vec<TextConfig>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TableData {
     pub svg: String,
     pub width: i32,
@@ -83,7 +86,9 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                 for records in rating_data.data {
                     match records {
                         RatingType::UserRating(user_data) => {
-                            let rating = CreateUserRating::from_user(pool, user_data.username.clone(), user_data.contest_type, x + 5, y - 78).await;
+                            let rating =
+                                CreateUserRating::from_user(pool, user_data.username.clone(), user_data.contest_type, x + 5, y - 78, user_data.color_theme)
+                                    .await;
                             if !gradient_id_set.contains(&rating.option.gradient_name) {
                                 gradient_vec.push(rating.gradient_svg);
                                 gradient_id_set.insert(rating.option.gradient_name);
@@ -97,7 +102,15 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                             ));
                         }
                         RatingType::Custom(custom_data) => {
-                            let rating = CreateUserRating::from_number(custom_data.title.clone(), custom_data.rating, x + 5, y - 78).await;
+                            let rating = CreateUserRating::from_number(
+                                custom_data.title.clone(),
+                                custom_data.rating,
+                                x + 5,
+                                y - 78,
+                                custom_data.has_bronze,
+                                custom_data.color_theme,
+                            )
+                            .await;
                             if !gradient_id_set.contains(&rating.option.gradient_name) {
                                 gradient_vec.push(rating.gradient_svg);
                                 gradient_id_set.insert(rating.option.gradient_name);

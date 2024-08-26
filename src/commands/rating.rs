@@ -11,6 +11,7 @@ use std::{io::Cursor, vec};
 use tera::Tera;
 use tokio::sync::Mutex;
 
+use crate::utils::svg::create_user_rating::Theme;
 use crate::{
     scraping::contest_type::ContestType,
     utils::{svg::create_user_rating::CreateUserRating, svg_to_png::svg_to_png},
@@ -81,7 +82,7 @@ pub async fn now(
             AtCoderContestType::Heuristic => ContestType::Heuristic,
         };
         let pool: &Pool = &pool.clone();
-        let svg_data = CreateUserRating::from_user(&Arc::new(Mutex::new(pool.clone())), atcoder_user, contest_type, 0, 0).await;
+        let svg_data = CreateUserRating::from_user(&Arc::new(Mutex::new(pool.clone())), atcoder_user, contest_type, 0, 0, Theme::Dark).await;
         let mut tmpl = Tera::default();
         tmpl.add_raw_template("user_rating.svg", include_str!("../../static/img/user_rating.svg")).unwrap();
         let mut ctx = tera::Context::new();
@@ -184,7 +185,7 @@ pub async fn rating_history(
             let mut x_max = x_max.unwrap();
 
             let caption = "Rating History";
-            let font = ("Segoe UI", 40);
+            let font = ("Lato", 40);
 
             let mut point_series_vec = vec![];
             let mut line_series_vec = vec![];
@@ -315,7 +316,7 @@ pub async fn rating_history(
                 .position(SeriesLabelPosition::UpperLeft)
                 .border_style(BLACK)
                 .background_style(WHITE.mix(0.8))
-                .label_font(("Segoe UI", 20))
+                .label_font(("Lato", 20))
                 .draw()
                 .unwrap();
         }

@@ -11,7 +11,10 @@ use serde::{Deserialize, Serialize};
 use tera::{Context, Tera};
 use tokio::sync::Mutex;
 
-use crate::{scraping::contest_type::ContestType, utils::svg::create_user_rating::CreateUserRating};
+use crate::{
+    scraping::contest_type::ContestType,
+    utils::svg::create_user_rating::{CreateUserRating, Theme},
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[allow(non_snake_case)]
@@ -103,7 +106,7 @@ async fn get_user_image(pool: web::Data<Pool>, id: web::Path<String>, query: web
         ContestType::Algorithm
     };
     let pool: &Pool = pool.as_ref();
-    let svg_data = CreateUserRating::from_user(&Arc::new(Mutex::new(pool.clone())), id.to_string(), contest_type, 0, 0).await;
+    let svg_data = CreateUserRating::from_user(&Arc::new(Mutex::new(pool.clone())), id.to_string(), contest_type, 0, 0, Theme::Light).await;
     let mut tmpl = Tera::default();
     tmpl.add_raw_template("user_rating.svg", include_str!("../static/img/user_rating.svg")).unwrap();
     let mut ctx = Context::new();

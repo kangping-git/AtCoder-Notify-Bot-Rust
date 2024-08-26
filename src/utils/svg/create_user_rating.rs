@@ -21,9 +21,14 @@ pub struct CreateUserRating {
     pub text_svg: String,
     pub option: UserRatingOption,
 }
+#[derive(Debug, Clone)]
+pub enum Theme {
+    Light,
+    Dark,
+}
 
 impl CreateUserRating {
-    pub async fn from_user(pool: &Arc<Mutex<Pool>>, user: String, contest_type: contest_type::ContestType, x: i32, y: i32) -> CreateUserRating {
+    pub async fn from_user(pool: &Arc<Mutex<Pool>>, user: String, contest_type: contest_type::ContestType, x: i32, y: i32, theme: Theme) -> CreateUserRating {
         let pool = pool.lock().await;
         let contest_type: i32 = contest_type as i32;
         let mut conn = pool.get_conn().unwrap();
@@ -43,22 +48,44 @@ impl CreateUserRating {
         } else {
             rating = 0
         }
-        let rating_colors = &[
-            "#404040", "#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000", "#FF0000",
-        ];
-        let stroke_colors = &[
-            "#404040",
-            "#808080",
-            "#804000",
-            "#008000",
-            "#00C0C0",
-            "#0000FF",
-            "#C0C000",
-            "#FF8000",
-            "#FF0000",
-            "rgb(128, 128, 128)",
-            "rgb(255, 215, 0)",
-        ];
+        let rating_colors = if let Theme::Light = theme {
+            &[
+                "#404040", "#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000", "#FF0000",
+            ]
+        } else {
+            &[
+                "#FFFFFF", "#C0C0C0", "#B08C56", "#3FAF3F", "#42E0E0", "#8888FF", "#FFFF56", "#FFB836", "#FF6767",
+            ]
+        };
+        let stroke_colors = if let Theme::Light = theme {
+            &[
+                "#404040",
+                "#808080",
+                "#804000",
+                "#008000",
+                "#00C0C0",
+                "#0000FF",
+                "#C0C000",
+                "#FF8000",
+                "#FF0000",
+                "rgb(128, 128, 128)",
+                "rgb(255, 215, 0)",
+            ]
+        } else {
+            &[
+                "#FFFFFF",
+                "#C0C0C0",
+                "#B08C56",
+                "#3FAF3F",
+                "#42E0E0",
+                "#8888FF",
+                "#FFFF56",
+                "#FFB836",
+                "#FF6767",
+                "rgb(128, 128, 128)",
+                "rgb(255, 215, 0)",
+            ]
+        };
         let percent = ((rating % 400) as f64) / 4.0;
         let mut fill = format!("#gradient_user_rating_{}", rating);
         if rating >= 3600 {
@@ -102,33 +129,93 @@ impl CreateUserRating {
             },
         }
     }
-    pub async fn from_number(title: String, num: i32, x: i32, y: i32) -> CreateUserRating {
+    pub async fn from_number(title: String, num: i32, x: i32, y: i32, has_bronze: bool, theme: Theme) -> CreateUserRating {
         let rating = num;
-        let rating_colors = &[
-            "#404040", "#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000", "#FF0000",
-        ];
-        let stroke_colors = &[
-            "#404040",
-            "#808080",
-            "#804000",
-            "#008000",
-            "#00C0C0",
-            "#0000FF",
-            "#C0C000",
-            "#FF8000",
-            "#FF0000",
-            "rgb(150, 92, 44)",
-            "rgb(128, 128, 128)",
-            "rgb(255, 215, 0)",
-        ];
+        let rating_colors = if let Theme::Light = theme {
+            &[
+                "#404040", "#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000", "#FF0000",
+            ]
+        } else {
+            &[
+                "#FFFFFF", "#C0C0C0", "#B08C56", "#3FAF3F", "#42E0E0", "#8888FF", "#FFFF56", "#FFB836", "#FF6767",
+            ]
+        };
+        let stroke_colors: &Vec<&str> = if has_bronze {
+            if let Theme::Light = theme {
+                &vec![
+                    "#404040",
+                    "#808080",
+                    "#804000",
+                    "#008000",
+                    "#00C0C0",
+                    "#0000FF",
+                    "#C0C000",
+                    "#FF8000",
+                    "#FF0000",
+                    "rgb(150, 92, 44)",
+                    "rgb(128, 128, 128)",
+                    "rgb(255, 215, 0)",
+                ]
+            } else {
+                &vec![
+                    "#404040",
+                    "#808080",
+                    "#804000",
+                    "#008000",
+                    "#00C0C0",
+                    "#0000FF",
+                    "#C0C000",
+                    "#FF8000",
+                    "#FF0000",
+                    "rgb(128, 128, 128)",
+                    "rgb(255, 215, 0)",
+                ]
+            }
+        } else if let Theme::Dark = theme {
+            {
+                &vec![
+                    "#FFFFFF",
+                    "#C0C0C0",
+                    "#B08C56",
+                    "#3FAF3F",
+                    "#42E0E0",
+                    "#8888FF",
+                    "#FFFF56",
+                    "#FFB836",
+                    "#FF6767",
+                    "rgb(128, 128, 128)",
+                    "rgb(255, 215, 0)",
+                ]
+            }
+        } else {
+            &vec![
+                "#404040",
+                "#808080",
+                "#804000",
+                "#008000",
+                "#00C0C0",
+                "#0000FF",
+                "#C0C000",
+                "#FF8000",
+                "#FF0000",
+                "rgb(128, 128, 128)",
+                "rgb(255, 215, 0)",
+            ]
+        };
         let percent = ((rating % 400) as f64) / 4.0;
         let mut fill = format!("#gradient_rating_{}", rating);
-        if rating >= 4000 {
-            fill = "#Gold".to_string()
+        if has_bronze {
+            if rating >= 4000 {
+                fill = "#Gold".to_string()
+            } else if rating >= 3600 {
+                fill = "#Silver".to_string()
+            } else if rating >= 3200 {
+                fill = "#Bronze".to_string()
+            }
         } else if rating >= 3600 {
-            fill = "#Silver".to_string()
+            fill = "#Gold".to_string()
         } else if rating >= 3200 {
-            fill = "#Bronze".to_string()
+            fill = "#Silver".to_string()
         }
         let mut tmpl = Tera::default();
         tmpl.add_raw_templates(vec![

@@ -1,4 +1,4 @@
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub enum ContestType {
     #[default]
     Algorithm = 0,
