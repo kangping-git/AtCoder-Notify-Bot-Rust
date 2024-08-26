@@ -1,5 +1,5 @@
 use crate::scraping::contest_type::{ContestRatingType, ContestType};
-use crate::utils::svg::create_table::{create_table, Align, Row, TableRowsText, TextConfig};
+use crate::utils::svg::create_table::{create_table, Align, Row, TableRowsText, TextConfig, Title};
 use crate::utils::svg_to_png::svg_to_png;
 use crate::{Context, Error};
 use chrono::{DateTime, FixedOffset};
@@ -74,31 +74,31 @@ pub async fn create_contest_response(
     }
     let rows = vec![
         Row::Text(TableRowsText {
-            title: "No.".to_string(),
+            title: Title::Text("No.".to_string()),
             width: 200,
             align: Align::End,
             data: counts,
         }),
         Row::Text(TableRowsText {
-            title: "".to_string(),
+            title: Title::Text("".to_string()),
             width: 100,
             align: Align::Middle,
             data: contest_rating_type,
         }),
         Row::Text(TableRowsText {
-            title: "ContestName".to_string(),
+            title: Title::Text("ContestName".to_string()),
             width: 3500,
             align: Align::Start,
             data: contest_names,
         }),
         Row::Text(TableRowsText {
-            title: "RatingType".to_string(),
+            title: Title::Text("RatingType".to_string()),
             width: 500,
             align: Align::Middle,
             data: contest_type,
         }),
         Row::Text(TableRowsText {
-            title: "RatingRange".to_string(),
+            title: Title::Text("RatingRange".to_string()),
             width: 700,
             align: Align::Middle,
             data: rating_range,

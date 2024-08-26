@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize, Default, Clone)]
 #[allow(non_snake_case)]
 pub struct StandingsJson {
     pub Fixed: bool,
@@ -12,7 +12,7 @@ pub struct StandingsJson {
     pub Translation: BTreeMap<String, String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[allow(non_snake_case)]
 pub struct TaskInfo {
     pub Assignment: String,
@@ -20,7 +20,7 @@ pub struct TaskInfo {
     pub TaskScreenName: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[allow(non_snake_case)]
 pub struct StandingsData {
     pub Rank: i32,
@@ -40,7 +40,7 @@ pub struct StandingsData {
     pub TotalResult: TotalResult,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[allow(non_snake_case)]
 pub struct TotalResult {
     pub Count: i32,
@@ -52,7 +52,7 @@ pub struct TotalResult {
     pub Additional: Option<i32>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 #[allow(non_snake_case)]
 pub struct TaskResults {
     pub Count: i32,

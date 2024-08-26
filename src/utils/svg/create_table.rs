@@ -38,9 +38,18 @@ pub enum RatingType {
     UserRating(UserRating),
     Custom(RatingCustom),
 }
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub enum Title {
+    RatingCustom(RatingCustom),
+    UserRating(UserRating),
+    Text(String),
+}
+
 #[derive(Debug, Clone)]
 pub struct TableRowsRating {
-    pub title: String,
+    pub title: Title,
     pub width: i32,
     pub data: Vec<RatingType>,
 }
@@ -52,7 +61,7 @@ pub struct TextConfig {
 }
 #[derive(Debug, Clone)]
 pub struct TableRowsText {
-    pub title: String,
+    pub title: Title,
     pub width: i32,
     pub align: Align,
     pub data: Vec<TextConfig>,
@@ -77,11 +86,52 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
         let mut text_svg_data: Vec<String> = vec![];
         match row {
             Row::Rating(rating_data) => {
-                text_svg_data.push(format!(
-                    "<text x=\"{}\" y=\"{y}\" fill=\"white\" font-weight=\"bold\" text-anchor=\"middle\" font-size=\"70\">{}</text>",
-                    x + rating_data.width / 2,
-                    rating_data.title
-                ));
+                match rating_data.title {
+                    Title::Text(text) => {
+                        text_svg_data.push(format!(
+                            "<text x=\"{}\" y=\"{y}\" fill=\"white\" font-weight=\"bold\" text-anchor=\"middle\" font-size=\"70\">{}</text>",
+                            x + rating_data.width / 2,
+                            text
+                        ));
+                    }
+                    Title::UserRating(user) => {
+                        let rating = CreateUserRating::from_user(pool, user.username.clone(), user.contest_type, x + 5, y - 78, user.color_theme).await;
+                        if !gradient_id_set.contains(&rating.option.gradient_name) {
+                            gradient_vec.push(rating.gradient_svg);
+                            gradient_id_set.insert(rating.option.gradient_name);
+                        }
+                        circle_vec.push(rating.circle_svg);
+                        text_svg_data.push(format!(
+                            "<text x=\"{}\" y=\"{y}\" fill=\"{}\" font-size=\"70\">{}</text>",
+                            x + 120,
+                            rating.option.border_color,
+                            &user.username
+                        ));
+                    }
+                    Title::RatingCustom(custom_data) => {
+                        let rating = CreateUserRating::from_number(
+                            custom_data.title.clone(),
+                            custom_data.rating,
+                            x + 5,
+                            y - 78,
+                            custom_data.has_bronze,
+                            custom_data.color_theme,
+                        )
+                        .await;
+                        if !gradient_id_set.contains(&rating.option.gradient_name) {
+                            gradient_vec.push(rating.gradient_svg);
+                            gradient_id_set.insert(rating.option.gradient_name);
+                        }
+                        circle_vec.push(rating.circle_svg);
+                        text_svg_data.push(format!(
+                            "<text x=\"{}\" y=\"{}\" fill=\"{}\" font-size=\"70\">{}</text>",
+                            x + 120,
+                            y,
+                            rating.option.border_color,
+                            &custom_data.title
+                        ));
+                    }
+                }
                 y += 110;
                 for records in rating_data.data {
                     match records {
@@ -140,11 +190,52 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                     Align::Middle => "middle",
                     Align::End => "end",
                 };
-                text_svg_data.push(format!(
-                    "<text x=\"{}\" y=\"{y}\" fill=\"white\" font-weight=\"bold\" text-anchor=\"middle\" font-size=\"70\">{}</text>",
-                    x + text_data.width / 2,
-                    text_data.title
-                ));
+                match text_data.title {
+                    Title::Text(text) => {
+                        text_svg_data.push(format!(
+                            "<text x=\"{}\" y=\"{y}\" fill=\"white\" font-weight=\"bold\" text-anchor=\"middle\" font-size=\"70\">{}</text>",
+                            x + text_data.width / 2,
+                            text
+                        ));
+                    }
+                    Title::UserRating(user) => {
+                        let rating = CreateUserRating::from_user(pool, user.username.clone(), user.contest_type, x + 5, y - 78, user.color_theme).await;
+                        if !gradient_id_set.contains(&rating.option.gradient_name) {
+                            gradient_vec.push(rating.gradient_svg);
+                            gradient_id_set.insert(rating.option.gradient_name);
+                        }
+                        circle_vec.push(rating.circle_svg);
+                        text_svg_data.push(format!(
+                            "<text x=\"{}\" y=\"{y}\" fill=\"{}\" font-size=\"70\">{}</text>",
+                            x + 120,
+                            rating.option.border_color,
+                            &user.username
+                        ));
+                    }
+                    Title::RatingCustom(custom_data) => {
+                        let rating = CreateUserRating::from_number(
+                            custom_data.title.clone(),
+                            custom_data.rating,
+                            x + 5,
+                            y - 78,
+                            custom_data.has_bronze,
+                            custom_data.color_theme,
+                        )
+                        .await;
+                        if !gradient_id_set.contains(&rating.option.gradient_name) {
+                            gradient_vec.push(rating.gradient_svg);
+                            gradient_id_set.insert(rating.option.gradient_name);
+                        }
+                        circle_vec.push(rating.circle_svg);
+                        text_svg_data.push(format!(
+                            "<text x=\"{}\" y=\"{}\" fill=\"{}\" font-size=\"70\">{}</text>",
+                            x + 120,
+                            y,
+                            rating.option.border_color,
+                            &custom_data.title
+                        ));
+                    }
+                }
                 y += 110;
                 for records in text_data.data {
                     text_svg_data.push(format!(

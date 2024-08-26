@@ -224,17 +224,16 @@ impl CreateUserRating {
             ("user_rating_text.svg", include_str!("../../../static/img/user_rating_text.svg")),
         ])
         .unwrap();
+        let rating_color = if rating == 0 {
+            0
+        } else {
+            std::cmp::min((rating / 400) as usize + 1, rating_colors.len() - 1)
+        };
         let mut ctx = Context::new();
         ctx.insert("percent", &percent);
         ctx.insert("user_name", &format!("gradient_rating_{}", rating));
-        ctx.insert(
-            "rating_color",
-            &rating_colors[std::cmp::min(((rating + 399) / 400) as usize, rating_colors.len() - 1)],
-        );
-        ctx.insert(
-            "stroke_color",
-            &stroke_colors[std::cmp::min(((rating + 399) / 400) as usize, stroke_colors.len() - 1)],
-        );
+        ctx.insert("rating_color", &rating_colors[rating_color]);
+        ctx.insert("stroke_color", &stroke_colors[rating_color]);
         ctx.insert("fill_url", &fill);
         ctx.insert("username", &title);
         ctx.insert("x", &(x + 100));
@@ -247,7 +246,7 @@ impl CreateUserRating {
             text_svg: tmpl.render("user_rating_text.svg", &ctx).unwrap(),
             option: UserRatingOption {
                 rating: num,
-                border_color: stroke_colors[std::cmp::min(((rating + 399) / 400) as usize, stroke_colors.len() - 1)].to_string(),
+                border_color: stroke_colors[rating_color].to_string(),
                 text: title,
                 gradient_name: fill,
             },
