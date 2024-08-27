@@ -224,7 +224,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             rating: difficulty as i32,
                             has_bronze: false,
                         }),
-                        width: 0,
+                        width: 400,
                         align: Align::Middle,
                         data: vec![],
                     });
@@ -394,12 +394,22 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             value: if users.IsRated { "Yes".to_string() } else { "No".to_string() },
                             color: if users.IsRated { "white" } else { "gray" }.to_string(),
                         });
-                        let total_text = if users.TotalResult.Penalty > 0 {
+                        let mut penalty = users.TotalResult.Penalty;
+                        if users.TotalResult.Score == 0 {
+                            penalty = users.TotalResult.Count
+                        }
+                        let total_text = if penalty > 0 && users.TotalResult.Score > 0 {
                             total.push(TextConfig {
-                                value: format!("{}<tspan fill=\"#f33\">({})</tspan>", users.TotalResult.Score / 100, users.TotalResult.Penalty),
+                                value: format!("{}<tspan fill=\"#f33\">({})</tspan>", users.TotalResult.Score / 100, penalty),
                                 color: "white".to_string(),
                             });
-                            format!("{}({})", users.TotalResult.Score / 100, users.TotalResult.Penalty)
+                            format!("{}({})", users.TotalResult.Score / 100, penalty)
+                        } else if penalty > 0 {
+                            total.push(TextConfig {
+                                value: format!("({})", penalty),
+                                color: "#f33".to_string(),
+                            });
+                            format!("{}", penalty)
                         } else {
                             total.push(TextConfig {
                                 value: format!("{}", users.TotalResult.Score / 100),
@@ -429,19 +439,32 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             .to_string(),
                         });
                         for (key, value) in &task_name_to_index {
+                            let mut penalty = 0;
+                            if users.TaskResults.contains_key(*key) {
+                                penalty = users.TaskResults[*key].Penalty;
+                                if users.TaskResults[*key].Score == 0 {
+                                    penalty = users.TaskResults[*key].Count
+                                }
+                            }
                             let text = if !users.TaskResults.contains_key(*key) {
                                 points[*value].data.push(TextConfig {
                                     value: "-".to_string(),
-                                    color: "white".to_string(),
+                                    color: "gray".to_string(),
                                 });
                                 "-".to_string()
-                            } else if users.TaskResults[*key].Penalty > 0 {
+                            } else if penalty > 0 && users.TaskResults[*key].Score > 0 {
                                 let task = &users.TaskResults[*key];
                                 points[*value].data.push(TextConfig {
-                                    value: format!("{}<tspan fill=\"#f33\">({})</tspan>", task.Score / 100, task.Penalty),
+                                    value: format!("{}<tspan fill=\"#f33\">({})</tspan>", task.Score / 100, penalty),
                                     color: "white".to_string(),
                                 });
-                                format!("{}({})", task.Score / 100, task.Penalty)
+                                format!("{}({})", task.Score / 100, penalty)
+                            } else if penalty > 0 {
+                                points[*value].data.push(TextConfig {
+                                    value: format!("({})", penalty),
+                                    color: "#f33".to_string(),
+                                });
+                                format!("{}", penalty)
                             } else {
                                 let task = &users.TaskResults[*key];
                                 points[*value].data.push(TextConfig {
@@ -452,7 +475,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             };
                             let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
                             layout.append(&[font.clone()], &TextStyle::new(&text, scale, 0));
-                            let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32) + 50.0;
+                            let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32) + 200.0;
                             points[*value].width = points[*value].width.max(width as i32);
                         }
                         server_ranks.push(TextConfig {
@@ -482,23 +505,23 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                         Row::Text(TableRowsText {
                             title: Title::Text("All".to_string()),
                             width: 300,
-                            align: Align::Start,
+                            align: Align::End,
                             data: ranks,
                         }),
                         Row::Text(TableRowsText {
                             title: Title::Text("Server".to_string()),
                             width: 300,
-                            align: Align::Start,
+                            align: Align::End,
                             data: server_ranks,
                         }),
                         Row::Rating(TableRowsRating {
                             title: Title::Text("User".to_string()),
-                            width: user_width + 120,
+                            width: (user_width + 120).max(300),
                             data: users_list,
                         }),
                         Row::Text(TableRowsText {
                             title: Title::Text("Total".to_string()),
-                            width: total_width + 50,
+                            width: (total_width + 150).max(300),
                             align: Align::Middle,
                             data: total,
                         }),

@@ -132,6 +132,7 @@ async fn main() {
         .options(poise::FrameworkOptions {
             commands: vec![atcoder::atcoder(), server::server()],
             on_error: |error| {
+                println!("{}", error);
                 Box::pin(async move {
                     error.ctx().unwrap().say("エラーが発生しました。").await.unwrap();
                 })

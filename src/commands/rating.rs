@@ -1,5 +1,5 @@
 use chrono::{DateTime, FixedOffset};
-use full_palette::GREY_800;
+use full_palette::{GREY_400, GREY_800};
 use image::{ImageBuffer, RgbImage};
 use mysql::prelude::*;
 use mysql::*;
@@ -106,23 +106,31 @@ pub async fn rating_history(
     #[description = "atcoder_user_list"] atcoder_user_list: Option<String>,
     #[description = "contest_type"] contest_type: AtCoderContestType,
 ) -> Result<(), Error> {
+    ctx.defer_ephemeral().await?;
     let pool = ctx.data().conn.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let guild_id = ctx.guild_id().unwrap().get();
-    let users: Vec<String> = conn
-        .exec(
+    let users: Vec<String> = if atcoder_user_list.clone().unwrap_or("".to_string()) == "all" {
+        conn.exec(
+            "SELECT atcoder_username FROM users WHERE server_id=:server_id",
+            params! {"server_id" => guild_id},
+        )
+        .unwrap()
+    } else {
+        conn.exec(
             "SELECT atcoder_username FROM users WHERE discord_id=:discord_id AND server_id=:server_id",
             params! {"discord_id" => ctx.author().id.to_string().parse::<u64>().unwrap(),
             "server_id" => guild_id},
         )
-        .unwrap();
+        .unwrap()
+    };
 
     let selected_data: Vec<String> = conn.exec(
         r"SELECT language FROM server_settings WHERE server_id=:server_id",
         params! {"server_id" => guild_id},
     )?;
     let mut lang = "ja";
-    if selected_data.len() == 1 {
+    if selected_data.len() == 1 && atcoder_user_list.is_none() {
         lang = selected_data[0].as_str();
     }
 
@@ -140,7 +148,13 @@ pub async fn rating_history(
     }
 
     let atcoder_user_list = match atcoder_user_list {
-        Some(atcoder_user_list) => atcoder_user_list,
+        Some(atcoder_user_list) => {
+            if atcoder_user_list == "all" {
+                users.join(",")
+            } else {
+                atcoder_user_list
+            }
+        }
         None => users[0].clone(),
     };
     let bg_colors = [
@@ -236,10 +250,10 @@ pub async fn rating_history(
                             EmptyElement::at((*x, *y))
                                 + Circle::new(
                                     (0, 0),
-                                    3,
+                                    4,
                                     ShapeStyle::from(&circle_bg_colors[std::cmp::min(y / 400, (circle_bg_colors.len() - 1) as i32) as usize]).filled(),
                                 )
-                                + Circle::new((0, 0), 3, WHITE.stroke_width(2))
+                                + Circle::new((0, 0), 4, GREY_400.stroke_width(1))
                         })
                         .collect::<Vec<_>>();
                     point_series_vec.push(point_series);
@@ -249,8 +263,8 @@ pub async fn rating_history(
                         .zip(ys.iter())
                         .map(|(x, y)| {
                             EmptyElement::at((*x, *y))
-                                + Circle::new((0, 0), 3, HSLColor(idx as f64 / user_list.len() as f64, 1.0, 0.5).filled())
-                                + Circle::new((0, 0), 3, TRANSPARENT)
+                                + Circle::new((0, 0), 4, HSLColor(idx as f64 / user_list.len() as f64, 1.0, 0.5).filled())
+                                + Circle::new((0, 0), 4, TRANSPARENT)
                         })
                         .collect::<Vec<_>>();
                     point_series_vec.push(point_series);
@@ -297,16 +311,26 @@ pub async fn rating_history(
                 ))?;
             }
             let user_list: Vec<&str> = atcoder_user_list.split(',').collect();
+            let length = line_series_vec.len();
             for (idx, data) in line_series_vec.into_iter().enumerate() {
                 let idx_clone = idx;
                 let user_name = user_list[idx];
                 let user_list_clone = user_list.clone();
-                chart.draw_series(data)?.label(user_name).legend(move |(x, y)| {
-                    PathElement::new(
-                        vec![(x, y), (x + 20, y)],
-                        HSLColor(idx_clone as f64 / user_list_clone.len() as f64, 1.0, 0.5), // Use the cloned user_list
-                    )
-                });
+                if length == 1 {
+                    chart.draw_series(data)?.label(user_name).legend(move |(x, y)| {
+                        PathElement::new(
+                            vec![(x, y), (x + 20, y)],
+                            GREY_800, // Use the cloned user_list
+                        )
+                    });
+                } else {
+                    chart.draw_series(data)?.label(user_name).legend(move |(x, y)| {
+                        PathElement::new(
+                            vec![(x, y), (x + 20, y)],
+                            HSLColor(idx_clone as f64 / user_list_clone.len() as f64, 1.0, 0.5), // Use the cloned user_list
+                        )
+                    });
+                }
             }
             for i in point_series_vec {
                 chart.draw_series(i)?;
