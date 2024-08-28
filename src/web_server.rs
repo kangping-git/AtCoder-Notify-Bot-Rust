@@ -52,6 +52,15 @@ pub struct UserRatingsNotFound {
     found: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
+pub struct RatingData {
+    algo_avg: f64,
+    algo_stddev: f64,
+    heuristic_avg: f64,
+    heuristic_stddev: f64,
+}
+
 #[get("/")]
 async fn home() -> impl Responder {
     HttpResponse::Ok().content_type(ContentType::html()).body(include_str!("../static/pages/src/index.html"))
@@ -113,6 +122,27 @@ async fn get_user_image(pool: web::Data<Pool>, id: web::Path<String>, query: web
     ctx.insert("main", &format!("{}{}", &svg_data.circle_svg, &svg_data.text_svg));
     ctx.insert("gradient", &svg_data.gradient_svg);
     HttpResponse::Ok().content_type("image/svg+xml").body(tmpl.render("user_rating.svg", &ctx).unwrap())
+}
+
+#[get("/api/atcoder/data/rating.json")]
+async fn data_rating(pool: web::Data<Pool>) -> HttpResponse {
+    let mut conn = pool.get_conn().unwrap();
+    let (algo_avg, algo_stddev, heuristic_avg, heuristic_stddev) = conn
+        .query(
+            "SELECT 
+                (SELECT AVG(algo_rating) FROM atcoder_user_ratings WHERE algo_contests > 0),
+                (SELECT STDDEV(algo_rating) FROM atcoder_user_ratings WHERE algo_contests > 0),
+                (SELECT AVG(heuristic_rating) FROM atcoder_user_ratings WHERE heuristic_contests > 0),
+                (SELECT STDDEV(heuristic_rating) FROM atcoder_user_ratings WHERE heuristic_contests > 0)",
+        )
+        .unwrap()[0];
+    let data = RatingData {
+        algo_avg,
+        algo_stddev,
+        heuristic_avg,
+        heuristic_stddev,
+    };
+    HttpResponse::Ok().content_type(ContentType::json()).body(serde_json::to_string(&data).unwrap())
 }
 
 #[get("/api/atcoder/history/{atcoder_id}")]
@@ -205,6 +235,7 @@ pub async fn start() {
             .service(home)
             .service(icon)
             .service(output_css)
+            .service(data_rating)
             .default_service(web::to(default_handler))
     })
     .bind(("127.0.0.1", port.parse::<u16>().unwrap()))
