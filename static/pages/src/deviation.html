@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>calc atcoder deviation</title>
+        <link href="/output.css" rel="stylesheet" />
+        <script>
+            window.addEventListener("load", async () => {
+                let input = document.getElementById("username");
+                let timeout = null;
+                let rating_data = await (await fetch("/api/atcoder/data/rating.json")).json();
+                input.addEventListener("input", () => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(async () => {
+                        let user_data = await (await fetch("/api/atcoder/rating/" + input.value)).json();
+                        if (user_data.found) {
+                            if (user_data.algo_rated_num) {
+                                let devination_score = ((user_data.algo_rating - rating_data.algo_avg) / rating_data.algo_stddev) * 10 + 50;
+                                document.getElementById("algo_rating").innerText = user_data.algo_rating;
+                                document.getElementById("algo_devination").innerText = devination_score.toFixed(2);
+                                document.getElementById("algo_average").innerText = rating_data.algo_avg.toFixed(2);
+                                document.getElementById("algo_standard_deviation").innerText = rating_data.algo_stddev.toFixed(2);
+                            } else {
+                                document.getElementById("algo_rating").innerText = "-";
+                                document.getElementById("algo_devination").innerText = "-";
+                                document.getElementById("algo_average").innerText = "-";
+                                document.getElementById("algo_standard_deviation").innerText = "-";
+                            }
+                            if (user_data.heuristic_rated_num) {
+                                let devination_score = ((user_data.heuristic_rating - rating_data.heuristic_avg) / rating_data.heuristic_stddev) * 10 + 50;
+                                document.getElementById("heuristic_rating").innerText = user_data.heuristic_rating;
+                                document.getElementById("heuristic_devination").innerText = devination_score.toFixed(2);
+                                document.getElementById("heuristic_average").innerText = rating_data.heuristic_avg.toFixed(2);
+                                document.getElementById("heuristic_standard_deviation").innerText = rating_data.heuristic_stddev.toFixed(2);
+                            } else {
+                                document.getElementById("heuristic_rating").innerText = "-";
+                                document.getElementById("heuristic_devination").innerText = "-";
+                                document.getElementById("heuristic_average").innerText = "-";
+                                document.getElementById("heuristic_standard_deviation").innerText = "-";
+                            }
+                        } else {
+                            document.getElementById("algo_rating").innerText = "-";
+                            document.getElementById("algo_devination").innerText = "-";
+                            document.getElementById("algo_average").innerText = "-";
+                            document.getElementById("algo_standard_deviation").innerText = "-";
+                            document.getElementById("heuristic_rating").innerText = "-";
+                            document.getElementById("heuristic_devination").innerText = "-";
+                            document.getElementById("heuristic_average").innerText = "-";
+                            document.getElementById("heuristic_standard_deviation").innerText = "-";
+                        }
+                    }, 200);
+                });
+            });
+        </script>
+    </head>
+    <body class="bg-gradient-to-tr from-green-500 to-cyan-400 h-screen content-center font-sans">
+        <div class="bg-white rounded-xl w-4/5 h-4/5 mx-auto p-7 text-center">
+            <div class="mb-4 w-96 mx-auto">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="username"> Username </label>
+                <input
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    id="username"
+                    type="text"
+                    placeholder="Username"
+                />
+            </div>
+            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="mx-auto w-full text-sm text-left rtl:text-right text-gray-800">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Rating Type</th>
+                            <th scope="col" class="px-6 py-3">Rating</th>
+                            <th scope="col" class="px-6 py-3">Deviation Score</th>
+                            <th scope="col" class="px-6 py-3">Average</th>
+                            <th scope="col" class="px-6 py-3">Standard Deviation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Algorithm</th>
+                            <td class="px-6 py-4" id="algo_rating">-</td>
+                            <td class="px-6 py-4" id="algo_devination">-</td>
+                            <td class="px-6 py-4" id="algo_average">-</td>
+                            <td class="px-6 py-4" id="algo_standard_deviation">-</td>
+                        </tr>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Heuristic</th>
+                            <td class="px-6 py-4" id="heuristic_rating">-</td>
+                            <td class="px-6 py-4" id="heuristic_devination">-</td>
+                            <td class="px-6 py-4" id="heuristic_average">-</td>
+                            <td class="px-6 py-4" id="heuristic_standard_deviation">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+</html>

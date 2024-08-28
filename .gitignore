@@ -5,3 +5,5 @@ scraping/node_modules/
 scraping/dist/
 *.info
 *.log
+node_modules/
+package-lock.json

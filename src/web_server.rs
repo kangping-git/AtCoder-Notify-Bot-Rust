@@ -65,6 +65,10 @@ pub struct RatingData {
 async fn home() -> impl Responder {
     HttpResponse::Ok().content_type(ContentType::html()).body(include_str!("../static/pages/src/index.html"))
 }
+#[get("/deviation/")]
+async fn deviation() -> impl Responder {
+    HttpResponse::Ok().content_type(ContentType::html()).body(include_str!("../static/pages/src/deviation.html"))
+}
 #[get("/output.css")]
 async fn output_css() -> impl Responder {
     HttpResponse::Ok().content_type(ContentType(mime::TEXT_CSS)).body(include_str!("../static/pages/src/output.css"))
@@ -236,6 +240,7 @@ pub async fn start() {
             .service(icon)
             .service(output_css)
             .service(data_rating)
+            .service(deviation)
             .default_service(web::to(default_handler))
     })
     .bind(("127.0.0.1", port.parse::<u16>().unwrap()))
