@@ -106,9 +106,9 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
         let url = format!("https://{}/results/json", contest_id);
         let response = client.get(url).send().unwrap().text().unwrap_or_default();
         let response_text = response.trim();
-        if !response_text.is_empty() {
+        let data: Vec<ResultData> = serde_json::from_str(response_text).unwrap();
+        if !data.is_empty() {
             contests_list.push(contest_id.clone());
-            let data: Vec<ResultData> = serde_json::from_str(response_text).unwrap();
             for i in data {
                 if i.IsRated {
                     let mut is_delete = false;
@@ -131,9 +131,9 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                         if !has_cache {
                             let algo_flag = if *contest_type == 0 { "contestType=algo" } else { "contestType=heuristic" };
                             sleep(Duration::from_millis(1000)).await;
-                            log::info!("get inner performance: {}", i.UserScreenName);
+                            println!("get inner performance: {}", i.UserScreenName);
                             let user_rating_page = format!("https://atcoder.jp/users/{}/history/json?{}", &i.UserScreenName, algo_flag);
-                            log::info!("{user_rating_page}");
+                            println!("{user_rating_page}");
                             let response = client.get(user_rating_page).send().unwrap().text().unwrap();
                             let response_text = response.trim();
                             let response_json = serde_json::from_str(response_text);
@@ -154,7 +154,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                                 performance = i.InnerPerformance
                             }
                         }
-                        log::info!("user {}'s innerPerf is {performance}. is_delete flag is {is_delete}", i.UserScreenName)
+                        println!("user {}'s innerPerf is {performance}. is_delete flag is {is_delete}", i.UserScreenName)
                     }
                     if !is_delete {
                         user_history.push(UserRatings {
