@@ -4,13 +4,119 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>calc atcoder deviation</title>
-        <link href="./output.css" rel="stylesheet" />
+        <link href="/output.css" rel="stylesheet" />
         <script>
             window.addEventListener("load", async () => {
-                let raw_rating_check = document.getElementById("raw_rating_check");
-                raw_rating_check.addEventListener("change", () => {
+                document.querySelectorAll("input[type=radio]").forEach((element) => {
+                    element.addEventListener("change", () => {
+                        update();
+                    });
+                });
+                let update = async () => {
+                    let data_type = document.querySelector('input[name="from"]:checked').value;
+                    let user_data;
+                    if (data_type == "rating") {
+                        user_data = {
+                            found: true,
+                            algo_rating: parseInt(rating.value),
+                            algo_rated_num: 1,
+                            heuristic_rating: parseInt(rating.value),
+                            heuristic_rated_num: 1,
+                        };
+                        document.getElementById("username").classList.add("hidden");
+                        document.getElementById("rating").classList.remove("hidden");
+                    } else {
+                        if (input.value == "") {
+                            user_data = {
+                                found: false,
+                            };
+                        } else {
+                            user_data = await (await fetch("/api/atcoder/rating/" + input.value)).json();
+                        }
+                        document.getElementById("username").classList.remove("hidden");
+                        document.getElementById("rating").classList.add("hidden");
+                    }
+                    if (user_data.found) {
+                        if (user_data.algo_rated_num) {
+                            let devination_score = ((user_data.algo_rating - rating_data.algo_avg) / rating_data.algo_stddev) * 10 + 50;
+                            document.getElementById("algo_rating").innerText = user_data.algo_rating;
+                            document.getElementById("algo_devination").innerText = devination_score.toFixed(2);
+                            document.getElementById("algo_average").innerText = rating_data.algo_avg.toFixed(2);
+                            document.getElementById("algo_standard_deviation").innerText = rating_data.algo_stddev.toFixed(2);
+                            let inner_devination_score =
+                                (((user_data.algo_rating < 400 ? 400 - 400 * Math.log(400 / user_data.algo_rating) : user_data.algo_rating) -
+                                    rating_data.algo_inner_avg) /
+                                    rating_data.algo_inner_stddev) *
+                                    10 +
+                                50;
+                            document.getElementById("algo_inner_rating").innerText = (
+                                user_data.algo_rating < 400 ? 400 - 400 * Math.log(400 / user_data.algo_rating) : user_data.algo_rating
+                            ).toFixed(2);
+                            document.getElementById("algo_inner_devination").innerText = inner_devination_score.toFixed(2);
+                            document.getElementById("algo_inner_average").innerText = rating_data.algo_inner_avg.toFixed(2);
+                            document.getElementById("algo_inner_standard_deviation").innerText = rating_data.algo_inner_stddev.toFixed(2);
+                        } else {
+                            document.getElementById("algo_rating").innerText = "-";
+                            document.getElementById("algo_devination").innerText = "-";
+                            document.getElementById("algo_average").innerText = "-";
+                            document.getElementById("algo_standard_deviation").innerText = "-";
+                            document.getElementById("algo_inner_rating").innerText = "-";
+                            document.getElementById("algo_inner_devination").innerText = "-";
+                            document.getElementById("algo_inner_average").innerText = "-";
+                            document.getElementById("algo_inner_standard_deviation").innerText = "-";
+                        }
+                        if (user_data.heuristic_rated_num) {
+                            let devination_score = ((user_data.heuristic_rating - rating_data.heuristic_avg) / rating_data.heuristic_stddev) * 10 + 50;
+                            document.getElementById("heuristic_rating").innerText = user_data.heuristic_rating;
+                            document.getElementById("heuristic_devination").innerText = devination_score.toFixed(2);
+                            document.getElementById("heuristic_average").innerText = rating_data.heuristic_avg.toFixed(2);
+                            document.getElementById("heuristic_standard_deviation").innerText = rating_data.heuristic_stddev.toFixed(2);
+                            let inner_devination_score =
+                                (((user_data.heuristic_rating < 400 ? 400 - 400 * Math.log(400 / user_data.heuristic_rating) : user_data.heuristic_rating) -
+                                    rating_data.heuristic_inner_avg) /
+                                    rating_data.heuristic_inner_stddev) *
+                                    10 +
+                                50;
+                            document.getElementById("heuristic_inner_rating").innerText = (
+                                user_data.heuristic_rating < 400 ? 400 - 400 * Math.log(400 / user_data.heuristic_rating) : user_data.heuristic_rating
+                            ).toFixed(2);
+                            document.getElementById("heuristic_inner_devination").innerText = inner_devination_score.toFixed(2);
+                            document.getElementById("heuristic_inner_average").innerText = rating_data.heuristic_inner_avg.toFixed(2);
+                            document.getElementById("heuristic_inner_standard_deviation").innerText = rating_data.heuristic_inner_stddev.toFixed(2);
+                        } else {
+                            document.getElementById("heuristic_rating").innerText = "-";
+                            document.getElementById("heuristic_devination").innerText = "-";
+                            document.getElementById("heuristic_average").innerText = "-";
+                            document.getElementById("heuristic_standard_deviation").innerText = "-";
+                            document.getElementById("heuristic_inner_rating").innerText = "-";
+                            document.getElementById("heuristic_inner_devination").innerText = "-";
+                            document.getElementById("heuristic_inner_average").innerText = "-";
+                            document.getElementById("heuristic_inner_standard_deviation").innerText = "-";
+                        }
+                    } else {
+                        document.getElementById("algo_rating").innerText = "-";
+                        document.getElementById("algo_devination").innerText = "-";
+                        document.getElementById("algo_average").innerText = "-";
+                        document.getElementById("algo_standard_deviation").innerText = "-";
+                        document.getElementById("heuristic_rating").innerText = "-";
+                        document.getElementById("heuristic_devination").innerText = "-";
+                        document.getElementById("heuristic_average").innerText = "-";
+                        document.getElementById("heuristic_standard_deviation").innerText = "-";
+                        document.getElementById("algo_inner_rating").innerText = "-";
+                        document.getElementById("algo_inner_devination").innerText = "-";
+                        document.getElementById("algo_inner_average").innerText = "-";
+                        document.getElementById("algo_inner_standard_deviation").innerText = "-";
+                        document.getElementById("heuristic_inner_rating").innerText = "-";
+                        document.getElementById("heuristic_inner_devination").innerText = "-";
+                        document.getElementById("heuristic_inner_average").innerText = "-";
+                        document.getElementById("heuristic_inner_standard_deviation").innerText = "-";
+                    }
+                };
+
+                let inner_rating_check = document.getElementById("inner_rating_check");
+                inner_rating_check.addEventListener("change", () => {
                     let hidden = document.querySelectorAll(".toggle-hidden");
-                    if (raw_rating_check) {
+                    if (inner_rating_check) {
                         hidden.forEach((element) => {
                             element.classList.toggle("hidden");
                         });
@@ -25,105 +131,78 @@
                 let rating_data = await (await fetch("/api/atcoder/data/rating.json")).json();
                 input.addEventListener("input", () => {
                     clearTimeout(timeout);
-                    timeout = setTimeout(async () => {
-                        let user_data = await (await fetch("/api/atcoder/rating/" + input.value)).json();
-                        if (user_data.found) {
-                            if (user_data.algo_rated_num) {
-                                let devination_score = ((user_data.algo_rating - rating_data.algo_avg) / rating_data.algo_stddev) * 10 + 50;
-                                document.getElementById("algo_rating").innerText = user_data.algo_rating;
-                                document.getElementById("algo_devination").innerText = devination_score.toFixed(2);
-                                document.getElementById("algo_average").innerText = rating_data.algo_avg.toFixed(2);
-                                document.getElementById("algo_standard_deviation").innerText = rating_data.algo_stddev.toFixed(2);
-                                let raw_devination_score =
-                                    (((user_data.algo_rating < 400 ? 400 - 400 * Math.log(400 / user_data.algo_rating) : user_data.algo_rating) -
-                                        rating_data.algo_raw_avg) /
-                                        rating_data.algo_raw_stddev) *
-                                        10 +
-                                    50;
-                                document.getElementById("algo_raw_rating").innerText = (
-                                    user_data.algo_rating < 400 ? 400 - 400 * Math.log(400 / user_data.algo_rating) : user_data.algo_rating
-                                ).toFixed(2);
-                                document.getElementById("algo_raw_devination").innerText = raw_devination_score.toFixed(2);
-                                document.getElementById("algo_raw_average").innerText = rating_data.algo_raw_avg.toFixed(2);
-                                document.getElementById("algo_raw_standard_deviation").innerText = rating_data.algo_raw_stddev.toFixed(2);
-                            } else {
-                                document.getElementById("algo_rating").innerText = "-";
-                                document.getElementById("algo_devination").innerText = "-";
-                                document.getElementById("algo_average").innerText = "-";
-                                document.getElementById("algo_standard_deviation").innerText = "-";
-                                document.getElementById("algo_raw_rating").innerText = "-";
-                                document.getElementById("algo_raw_devination").innerText = "-";
-                                document.getElementById("algo_raw_average").innerText = "-";
-                                document.getElementById("algo_raw_standard_deviation").innerText = "-";
-                            }
-                            if (user_data.heuristic_rated_num) {
-                                let devination_score = ((user_data.heuristic_rating - rating_data.heuristic_avg) / rating_data.heuristic_stddev) * 10 + 50;
-                                document.getElementById("heuristic_rating").innerText = user_data.heuristic_rating;
-                                document.getElementById("heuristic_devination").innerText = devination_score.toFixed(2);
-                                document.getElementById("heuristic_average").innerText = rating_data.heuristic_avg.toFixed(2);
-                                document.getElementById("heuristic_standard_deviation").innerText = rating_data.heuristic_stddev.toFixed(2);
-                                let raw_devination_score =
-                                    (((user_data.heuristic_rating < 400 ? 400 - 400 * Math.log(400 / user_data.heuristic_rating) : user_data.heuristic_rating) -
-                                        rating_data.heuristic_raw_avg) /
-                                        rating_data.heuristic_raw_stddev) *
-                                        10 +
-                                    50;
-                                document.getElementById("heuristic_raw_rating").innerText = (
-                                    user_data.heuristic_rating < 400 ? 400 - 400 * Math.log(400 / user_data.heuristic_rating) : user_data.heuristic_rating
-                                ).toFixed(2);
-                                document.getElementById("heuristic_raw_devination").innerText = raw_devination_score.toFixed(2);
-                                document.getElementById("heuristic_raw_average").innerText = rating_data.heuristic_raw_avg.toFixed(2);
-                                document.getElementById("heuristic_raw_standard_deviation").innerText = rating_data.heuristic_raw_stddev.toFixed(2);
-                            } else {
-                                document.getElementById("heuristic_rating").innerText = "-";
-                                document.getElementById("heuristic_devination").innerText = "-";
-                                document.getElementById("heuristic_average").innerText = "-";
-                                document.getElementById("heuristic_standard_deviation").innerText = "-";
-                                document.getElementById("heuristic_raw_rating").innerText = "-";
-                                document.getElementById("heuristic_raw_devination").innerText = "-";
-                                document.getElementById("heuristic_raw_average").innerText = "-";
-                                document.getElementById("heuristic_raw_standard_deviation").innerText = "-";
-                            }
-                        } else {
-                            document.getElementById("algo_rating").innerText = "-";
-                            document.getElementById("algo_devination").innerText = "-";
-                            document.getElementById("algo_average").innerText = "-";
-                            document.getElementById("algo_standard_deviation").innerText = "-";
-                            document.getElementById("heuristic_rating").innerText = "-";
-                            document.getElementById("heuristic_devination").innerText = "-";
-                            document.getElementById("heuristic_average").innerText = "-";
-                            document.getElementById("heuristic_standard_deviation").innerText = "-";
-                            document.getElementById("algo_raw_rating").innerText = "-";
-                            document.getElementById("algo_raw_devination").innerText = "-";
-                            document.getElementById("algo_raw_average").innerText = "-";
-                            document.getElementById("algo_raw_standard_deviation").innerText = "-";
-                            document.getElementById("heuristic_raw_rating").innerText = "-";
-                            document.getElementById("heuristic_raw_devination").innerText = "-";
-                            document.getElementById("heuristic_raw_average").innerText = "-";
-                            document.getElementById("heuristic_raw_standard_deviation").innerText = "-";
-                        }
-                    }, 200);
+                    timeout = setTimeout(update, 200);
+                });
+                let rating = document.getElementById("rating");
+                rating.addEventListener("input", () => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(update, 200);
                 });
             });
         </script>
     </head>
     <body class="bg-gradient-to-tr from-green-500 to-cyan-400 h-screen content-center font-sans">
-        <div class="bg-white rounded-xl w-4/5 h-4/5 mx-auto p-7 text-center relative">
-            <div class="mb-4 max-w-96 w-5/6 mx-auto">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="username"> Username </label>
-                <input
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    id="username"
-                    type="text"
-                    placeholder="Username"
-                />
+        <div class="bg-white rounded-xl w-4/5 min-h-[80vh] mx-auto p-7 pb-28 text-center relative">
+            <div class="gap-10 mx-auto">
+                <div class="inline-flex items-center">
+                    <label class="relative flex items-center p-3 rounded-full cursor-pointer" htmlFor="html">
+                        <input
+                            name="from"
+                            type="radio"
+                            class="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-full border border-blue-gray-200 text-gray-900 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
+                            id="from_username"
+                            value="username"
+                            checked
+                        />
+                        <span
+                            class="absolute text-gray-900 transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+                                <circle data-name="ellipse" cx="8" cy="8" r="8"></circle>
+                            </svg>
+                        </span>
+                    </label>
+                    <label class="mt-px font-light text-gray-700 cursor-pointer select-none" for="from_username"> From UserName </label>
+                </div>
+                <div class="inline-flex items-center">
+                    <label class="relative flex items-center p-3 rounded-full cursor-pointer" htmlFor="react">
+                        <input
+                            name="from"
+                            type="radio"
+                            class="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-full border border-blue-gray-200 text-gray-900 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
+                            id="from_rating"
+                            value="rating"
+                        />
+                        <span
+                            class="absolute text-gray-900 transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+                                <circle data-name="ellipse" cx="8" cy="8" r="8"></circle>
+                            </svg>
+                        </span>
+                    </label>
+                    <label class="mt-px font-light text-gray-700 cursor-pointer select-none" for="from_rating"> From Rating </label>
+                </div>
             </div>
+            <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="username"
+                type="text"
+                placeholder="Username"
+            />
+            <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline hidden"
+                id="rating"
+                type="number"
+                placeholder="Rating"
+                value="100"
+            />
             <div class="inline-flex items-center">
                 <label class="relative flex items-center p-3 rounded-full cursor-pointer" htmlFor="check">
                     <input
                         type="checkbox"
                         class="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-md border border-blue-gray-200 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
-                        id="raw_rating_check"
+                        id="inner_rating_check"
                     />
                     <span
                         class="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100"
@@ -144,7 +223,7 @@
                         </svg>
                     </span>
                 </label>
-                <label class="mt-px font-light text-gray-700 cursor-pointer select-none" htmlFor="check" for="raw_rating_check"> Show Raw Ratings </label>
+                <label class="mt-px font-light text-gray-700 cursor-pointer select-none" htmlFor="check" for="inner_rating_check"> Show Inner Ratings </label>
             </div>
             <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table class="mx-auto w-full text-sm text-left rtl:text-right text-gray-800">
@@ -166,11 +245,11 @@
                             <td class="px-6 py-4" id="algo_standard_deviation">-</td>
                         </tr>
                         <tr class="bg-white border-b hover:bg-gray-50 hidden toggle-hidden">
-                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Algorithm Raw</th>
-                            <td class="px-6 py-4" id="algo_raw_rating">-</td>
-                            <td class="px-6 py-4" id="algo_raw_devination">-</td>
-                            <td class="px-6 py-4" id="algo_raw_average">-</td>
-                            <td class="px-6 py-4" id="algo_raw_standard_deviation">-</td>
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Algorithm Inner</th>
+                            <td class="px-6 py-4" id="algo_inner_rating">-</td>
+                            <td class="px-6 py-4" id="algo_inner_devination">-</td>
+                            <td class="px-6 py-4" id="algo_inner_average">-</td>
+                            <td class="px-6 py-4" id="algo_inner_standard_deviation">-</td>
                         </tr>
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Heuristic</th>
@@ -180,11 +259,11 @@
                             <td class="px-6 py-4" id="heuristic_standard_deviation">-</td>
                         </tr>
                         <tr class="bg-white border-b hover:bg-gray-50 hidden toggle-hidden">
-                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Heuristic Raw</th>
-                            <td class="px-6 py-4" id="heuristic_raw_rating">-</td>
-                            <td class="px-6 py-4" id="heuristic_raw_devination">-</td>
-                            <td class="px-6 py-4" id="heuristic_raw_average">-</td>
-                            <td class="px-6 py-4" id="heuristic_raw_standard_deviation">-</td>
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Heuristic Inner</th>
+                            <td class="px-6 py-4" id="heuristic_inner_rating">-</td>
+                            <td class="px-6 py-4" id="heuristic_inner_devination">-</td>
+                            <td class="px-6 py-4" id="heuristic_inner_average">-</td>
+                            <td class="px-6 py-4" id="heuristic_inner_standard_deviation">-</td>
                         </tr>
                     </tbody>
                 </table>

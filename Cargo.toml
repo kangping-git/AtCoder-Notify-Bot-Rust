@@ -1,6 +1,6 @@
 [package]
 name = "atcoder_notify_bot"
-version = "1.4.3"
+version = "1.4.9"
 edition = "2021"
 
 [dependencies]
