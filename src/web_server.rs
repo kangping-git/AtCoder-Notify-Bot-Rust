@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, env, sync::Arc};
+use std::{collections::BTreeMap, env, fs, sync::Arc};
 
 use actix_web::{
     get,
@@ -67,20 +67,40 @@ pub struct RatingData {
 
 #[get("/")]
 async fn home() -> impl Responder {
-    HttpResponse::Ok().content_type(ContentType::html()).body(include_str!("../static/pages/src/index.html"))
+    let file_content = if env::var("DEBUG").is_err() {
+        include_str!("../static/pages/src/index.html").to_string()
+    } else {
+        fs::read_to_string("static/pages/src/index.html").unwrap()
+    };
+    HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
 }
 #[get("/deviation/")]
 async fn deviation() -> impl Responder {
-    HttpResponse::Ok().content_type(ContentType::html()).body(include_str!("../static/pages/src/deviation.html"))
+    let file_content = if env::var("DEBUG").is_err() {
+        include_str!("../static/pages/src/deviation.html").to_string()
+    } else {
+        fs::read_to_string("static/pages/src/deviation.html").unwrap()
+    };
+    HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
 }
 #[get("/output.css")]
 async fn output_css() -> impl Responder {
-    HttpResponse::Ok().content_type(ContentType(mime::TEXT_CSS)).body(include_str!("../static/pages/src/output.css"))
+    let file_content = if env::var("DEBUG").is_err() {
+        include_str!("../static/pages/src/output.css").to_string()
+    } else {
+        fs::read_to_string("static/pages/src/output.css").unwrap()
+    };
+    HttpResponse::Ok().content_type(ContentType(mime::TEXT_CSS)).body(file_content)
 }
 
 #[get("/notify_icon.svg")]
 async fn icon() -> impl Responder {
     HttpResponse::Ok().content_type(ContentType(mime::IMAGE_SVG)).body(include_str!("../static/img/notify_icon.svg"))
+}
+
+#[get("/notify_icon_white.svg")]
+async fn icon_white() -> impl Responder {
+    HttpResponse::Ok().content_type(ContentType(mime::IMAGE_SVG)).body(include_str!("../static/img/notify_icon_white.svg"))
 }
 
 #[get("/api/atcoder/rating/{atcoder_id}")]
@@ -215,7 +235,12 @@ async fn get_history(pool: web::Data<Pool>, id: web::Path<String>, query: web::Q
 async fn default_handler(req_method: Method) -> Result<impl Responder> {
     match req_method {
         Method::GET => {
-            let file = HttpResponse::NotFound().content_type(ContentType::html()).body(include_str!("../static/pages/src/404.html"));
+            let file_content = if env::var("DEBUG").is_err() {
+                include_str!("../static/pages/src/404.html").to_string()
+            } else {
+                fs::read_to_string("static/pages/src/404.html").unwrap()
+            };
+            let file = HttpResponse::NotFound().content_type(ContentType::html()).body(file_content);
             Ok(Either::Left(file))
         }
         _ => Ok(Either::Right(HttpResponse::MethodNotAllowed().finish())),
@@ -253,6 +278,7 @@ pub async fn start() {
             .service(output_css)
             .service(data_rating)
             .service(deviation)
+            .service(icon_white)
             .default_service(web::to(default_handler))
     })
     .bind(("127.0.0.1", port.parse::<u16>().unwrap()))

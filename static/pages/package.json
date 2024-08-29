@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "flowbite": "^2.5.1",
     "taos": "^1.0.5"
   },
   "devDependencies": {

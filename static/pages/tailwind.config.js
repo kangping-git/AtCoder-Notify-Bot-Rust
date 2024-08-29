@@ -3,7 +3,7 @@ module.exports = {
     content: {
         relative: true,
         transform: (content) => content.replace(/taos:/g, ""),
-        files: ["./src/*.{html,js}"],
+        files: ["./src/*.{html,js}", "./node_modules/flowbite/**/*.js"],
     },
     theme: {
         extend: {
@@ -27,5 +27,5 @@ module.exports = {
             },
         },
     },
-    plugins: [require("taos/plugin")],
+    plugins: [require("taos/plugin"), require("flowbite/plugin")],
 };

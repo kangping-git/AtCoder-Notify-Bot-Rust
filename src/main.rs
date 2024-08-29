@@ -26,7 +26,6 @@ use scraping::contest_type::ContestType;
 use scraping::contests::update_contests;
 use scraping::get_ranking::get_ranking;
 use scraping::get_submission::get_submission;
-use scraping::get_user_list;
 use scraping::notify;
 use sha2::Digest;
 use std::env;

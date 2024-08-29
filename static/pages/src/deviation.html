@@ -37,12 +37,17 @@
                         document.getElementById("rating").classList.add("hidden");
                     }
                     if (user_data.found) {
+                        let text = "あなた(" + input.value + ")のAtCoder偏差値は%0A";
+                        if (data_type == "rating") {
+                            text = "レーティングが" + rating.value + "の時のAtCoder偏差値は%0A";
+                        }
                         if (user_data.algo_rated_num) {
                             let devination_score = ((user_data.algo_rating - rating_data.algo_avg) / rating_data.algo_stddev) * 10 + 50;
                             document.getElementById("algo_rating").innerText = user_data.algo_rating;
                             document.getElementById("algo_devination").innerText = devination_score.toFixed(2);
                             document.getElementById("algo_average").innerText = rating_data.algo_avg.toFixed(2);
                             document.getElementById("algo_standard_deviation").innerText = rating_data.algo_stddev.toFixed(2);
+                            text += "Algorithm: " + devination_score.toFixed(2) + "%0A";
                             let inner_devination_score =
                                 (((user_data.algo_rating < 400 ? 400 - 400 * Math.log(400 / user_data.algo_rating) : user_data.algo_rating) -
                                     rating_data.algo_inner_avg) /
@@ -71,6 +76,7 @@
                             document.getElementById("heuristic_devination").innerText = devination_score.toFixed(2);
                             document.getElementById("heuristic_average").innerText = rating_data.heuristic_avg.toFixed(2);
                             document.getElementById("heuristic_standard_deviation").innerText = rating_data.heuristic_stddev.toFixed(2);
+                            text += "Heuristic: " + devination_score.toFixed(2) + "%0A";
                             let inner_devination_score =
                                 (((user_data.heuristic_rating < 400 ? 400 - 400 * Math.log(400 / user_data.heuristic_rating) : user_data.heuristic_rating) -
                                     rating_data.heuristic_inner_avg) /
@@ -93,6 +99,9 @@
                             document.getElementById("heuristic_inner_average").innerText = "-";
                             document.getElementById("heuristic_inner_standard_deviation").innerText = "-";
                         }
+                        text += "でした！";
+                        document.getElementById("share_x").href =
+                            "http://twitter.com/share?url=atcoder-notify.com%2Fdeviation%2F&hashtags=AtCoder偏差値&text=" + text;
                     } else {
                         document.getElementById("algo_rating").innerText = "-";
                         document.getElementById("algo_devination").innerText = "-";
@@ -110,6 +119,8 @@
                         document.getElementById("heuristic_inner_devination").innerText = "-";
                         document.getElementById("heuristic_inner_average").innerText = "-";
                         document.getElementById("heuristic_inner_standard_deviation").innerText = "-";
+                        document.getElementById("share_x").href =
+                            "http://twitter.com/share?url=atcoder-notify.com%2Fdeviation%2F&hashtags=AtCoder偏差値&text=あなたのAtCoder偏差値は%0Anull%0Aでした";
                     }
                 };
 
@@ -267,6 +278,16 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="absolute bottom-5 right-5">
+                <a
+                    href="http://twitter.com/share?url=atcoder-notify.com%2Fdeviation%2F&hashtags=AtCoder偏差値&text=あなたのAtCoder偏差値は%0Anull%0Aでした"
+                    target="_blank"
+                    rel="nofollow noopener noreferrer"
+                    class="bg-black text-white px-4 py-2 rounded-md"
+                    id="share_x"
+                    >Xで共有</a
+                >
             </div>
             <div class="absolute bottom-5 text-center left-1/2 -translate-x-1/2 border-t-2">
                 made by <a href="/">atcoder-notify.com</a><br />data from <a href="https://atcoder.jp">atcoder.jp</a>
