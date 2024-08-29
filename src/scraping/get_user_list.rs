@@ -18,11 +18,11 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) -> Result<
     let mut user_heuristic_history: BTreeMap<String, Vec<(i32, i32, String)>> = BTreeMap::new();
     let mut user_set = HashSet::new();
     for i in list {
-        user_set.insert(i.4.clone());
+        user_set.insert(i.4.clone().to_lowercase());
         let history = if i.5 == 0 {
-            user_algo_history.entry(i.4.clone()).or_default()
+            user_algo_history.entry(i.4.clone().to_lowercase()).or_default()
         } else {
-            user_heuristic_history.entry(i.4.clone()).or_default()
+            user_heuristic_history.entry(i.4.clone().to_lowercase()).or_default()
         };
         history.push((i.1, i.2, i.3));
     }
