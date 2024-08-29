@@ -59,6 +59,10 @@ pub struct RatingData {
     algo_stddev: f64,
     heuristic_avg: f64,
     heuristic_stddev: f64,
+    algo_raw_avg: f64,
+    algo_raw_stddev: f64,
+    heuristic_raw_avg: f64,
+    heuristic_raw_stddev: f64,
 }
 
 #[get("/")]
@@ -131,13 +135,17 @@ async fn get_user_image(pool: web::Data<Pool>, id: web::Path<String>, query: web
 #[get("/api/atcoder/data/rating.json")]
 async fn data_rating(pool: web::Data<Pool>) -> HttpResponse {
     let mut conn = pool.get_conn().unwrap();
-    let (algo_avg, algo_stddev, heuristic_avg, heuristic_stddev) = conn
+    let (algo_avg,algo_raw_avg, algo_stddev,algo_raw_stddev, heuristic_avg,heuristic_raw_avg, heuristic_stddev,heuristic_raw_stddev) = conn
         .query(
             "SELECT 
                 (SELECT AVG(algo_rating) FROM atcoder_user_ratings WHERE algo_contests > 0),
+                (SELECT AVG(IF(algo_rating <= 400, 400 - 400 * LOG(400 / algo_rating), algo_rating)) FROM atcoder_user_ratings WHERE algo_contests > 0),
                 (SELECT STDDEV(algo_rating) FROM atcoder_user_ratings WHERE algo_contests > 0),
+                (SELECT STDDEV(IF(algo_rating <= 400, 400 - 400 * LOG(400 / algo_rating), algo_rating)) FROM atcoder_user_ratings WHERE algo_contests > 0),
                 (SELECT AVG(heuristic_rating) FROM atcoder_user_ratings WHERE heuristic_contests > 0),
-                (SELECT STDDEV(heuristic_rating) FROM atcoder_user_ratings WHERE heuristic_contests > 0)",
+                (SELECT AVG(IF(heuristic_rating <= 400, 400 - 400 * LOG(400 / heuristic_rating), heuristic_rating)) FROM atcoder_user_ratings WHERE heuristic_contests > 0),
+                (SELECT STDDEV(heuristic_rating) FROM atcoder_user_ratings WHERE heuristic_contests > 0),
+                (SELECT STDDEV(IF(heuristic_rating <= 400, 400 - 400 * LOG(400 / heuristic_rating), heuristic_rating)) FROM atcoder_user_ratings WHERE heuristic_contests > 0)",
         )
         .unwrap()[0];
     let data = RatingData {
@@ -145,6 +153,10 @@ async fn data_rating(pool: web::Data<Pool>) -> HttpResponse {
         algo_stddev,
         heuristic_avg,
         heuristic_stddev,
+        algo_raw_avg,
+        algo_raw_stddev,
+        heuristic_raw_avg,
+        heuristic_raw_stddev,
     };
     HttpResponse::Ok().content_type(ContentType::json()).body(serde_json::to_string(&data).unwrap())
 }

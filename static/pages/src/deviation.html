@@ -7,6 +7,19 @@
         <link href="/output.css" rel="stylesheet" />
         <script>
             window.addEventListener("load", async () => {
+                let raw_rating_check = document.getElementById("raw_rating_check");
+                raw_rating_check.addEventListener("change", () => {
+                    let hidden = document.querySelectorAll(".toggle-hidden");
+                    if (raw_rating_check) {
+                        hidden.forEach((element) => {
+                            element.classList.toggle("hidden");
+                        });
+                    } else {
+                        hidden.forEach((element) => {
+                            element.classList.add("hidden");
+                        });
+                    }
+                });
                 let input = document.getElementById("username");
                 let timeout = null;
                 let rating_data = await (await fetch("/api/atcoder/data/rating.json")).json();
@@ -21,11 +34,27 @@
                                 document.getElementById("algo_devination").innerText = devination_score.toFixed(2);
                                 document.getElementById("algo_average").innerText = rating_data.algo_avg.toFixed(2);
                                 document.getElementById("algo_standard_deviation").innerText = rating_data.algo_stddev.toFixed(2);
+                                let raw_devination_score =
+                                    (((user_data.algo_rating < 400 ? 400 - 400 * Math.log(400 / user_data.algo_rating) : user_data.algo_rating) -
+                                        rating_data.algo_raw_avg) /
+                                        rating_data.algo_raw_stddev) *
+                                        10 +
+                                    50;
+                                document.getElementById("algo_raw_rating").innerText = (
+                                    user_data.algo_rating < 400 ? 400 - 400 * Math.log(400 / user_data.algo_rating) : user_data.algo_rating
+                                ).toFixed(2);
+                                document.getElementById("algo_raw_devination").innerText = raw_devination_score.toFixed(2);
+                                document.getElementById("algo_raw_average").innerText = rating_data.algo_raw_avg.toFixed(2);
+                                document.getElementById("algo_raw_standard_deviation").innerText = rating_data.algo_raw_stddev.toFixed(2);
                             } else {
                                 document.getElementById("algo_rating").innerText = "-";
                                 document.getElementById("algo_devination").innerText = "-";
                                 document.getElementById("algo_average").innerText = "-";
                                 document.getElementById("algo_standard_deviation").innerText = "-";
+                                document.getElementById("algo_raw_rating").innerText = "-";
+                                document.getElementById("algo_raw_devination").innerText = "-";
+                                document.getElementById("algo_raw_average").innerText = "-";
+                                document.getElementById("algo_raw_standard_deviation").innerText = "-";
                             }
                             if (user_data.heuristic_rated_num) {
                                 let devination_score = ((user_data.heuristic_rating - rating_data.heuristic_avg) / rating_data.heuristic_stddev) * 10 + 50;
@@ -33,11 +62,27 @@
                                 document.getElementById("heuristic_devination").innerText = devination_score.toFixed(2);
                                 document.getElementById("heuristic_average").innerText = rating_data.heuristic_avg.toFixed(2);
                                 document.getElementById("heuristic_standard_deviation").innerText = rating_data.heuristic_stddev.toFixed(2);
+                                let raw_devination_score =
+                                    (((user_data.heuristic_rating < 400 ? 400 - 400 * Math.log(400 / user_data.heuristic_rating) : user_data.heuristic_rating) -
+                                        rating_data.heuristic_raw_avg) /
+                                        rating_data.heuristic_raw_stddev) *
+                                        10 +
+                                    50;
+                                document.getElementById("heuristic_raw_rating").innerText = (
+                                    user_data.heuristic_rating < 400 ? 400 - 400 * Math.log(400 / user_data.heuristic_rating) : user_data.heuristic_rating
+                                ).toFixed(2);
+                                document.getElementById("heuristic_raw_devination").innerText = raw_devination_score.toFixed(2);
+                                document.getElementById("heuristic_raw_average").innerText = rating_data.heuristic_raw_avg.toFixed(2);
+                                document.getElementById("heuristic_raw_standard_deviation").innerText = rating_data.heuristic_raw_stddev.toFixed(2);
                             } else {
                                 document.getElementById("heuristic_rating").innerText = "-";
                                 document.getElementById("heuristic_devination").innerText = "-";
                                 document.getElementById("heuristic_average").innerText = "-";
                                 document.getElementById("heuristic_standard_deviation").innerText = "-";
+                                document.getElementById("heuristic_raw_rating").innerText = "-";
+                                document.getElementById("heuristic_raw_devination").innerText = "-";
+                                document.getElementById("heuristic_raw_average").innerText = "-";
+                                document.getElementById("heuristic_raw_standard_deviation").innerText = "-";
                             }
                         } else {
                             document.getElementById("algo_rating").innerText = "-";
@@ -48,6 +93,14 @@
                             document.getElementById("heuristic_devination").innerText = "-";
                             document.getElementById("heuristic_average").innerText = "-";
                             document.getElementById("heuristic_standard_deviation").innerText = "-";
+                            document.getElementById("algo_raw_rating").innerText = "-";
+                            document.getElementById("algo_raw_devination").innerText = "-";
+                            document.getElementById("algo_raw_average").innerText = "-";
+                            document.getElementById("algo_raw_standard_deviation").innerText = "-";
+                            document.getElementById("heuristic_raw_rating").innerText = "-";
+                            document.getElementById("heuristic_raw_devination").innerText = "-";
+                            document.getElementById("heuristic_raw_average").innerText = "-";
+                            document.getElementById("heuristic_raw_standard_deviation").innerText = "-";
                         }
                     }, 200);
                 });
@@ -64,6 +117,34 @@
                     type="text"
                     placeholder="Username"
                 />
+            </div>
+            <div class="inline-flex items-center">
+                <label class="relative flex items-center p-3 rounded-full cursor-pointer" htmlFor="check">
+                    <input
+                        type="checkbox"
+                        class="before:content[''] peer relative h-5 w-5 cursor-pointer appearance-none rounded-md border border-blue-gray-200 transition-all before:absolute before:top-2/4 before:left-2/4 before:block before:h-12 before:w-12 before:-translate-y-2/4 before:-translate-x-2/4 before:rounded-full before:bg-blue-gray-500 before:opacity-0 before:transition-opacity checked:border-gray-900 checked:bg-gray-900 checked:before:bg-gray-900 hover:before:opacity-10"
+                        id="raw_rating_check"
+                    />
+                    <span
+                        class="absolute text-white transition-opacity opacity-0 pointer-events-none top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 peer-checked:opacity-100"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-3.5 w-3.5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            stroke="currentColor"
+                            stroke-width="1"
+                        >
+                            <path
+                                fill-rule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clip-rule="evenodd"
+                            ></path>
+                        </svg>
+                    </span>
+                </label>
+                <label class="mt-px font-light text-gray-700 cursor-pointer select-none" htmlFor="check" for="raw_rating_check"> Show Raw Ratings </label>
             </div>
             <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
                 <table class="mx-auto w-full text-sm text-left rtl:text-right text-gray-800">
@@ -84,12 +165,26 @@
                             <td class="px-6 py-4" id="algo_average">-</td>
                             <td class="px-6 py-4" id="algo_standard_deviation">-</td>
                         </tr>
+                        <tr class="bg-white border-b hover:bg-gray-50 hidden toggle-hidden">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Algorithm Raw</th>
+                            <td class="px-6 py-4" id="algo_raw_rating">-</td>
+                            <td class="px-6 py-4" id="algo_raw_devination">-</td>
+                            <td class="px-6 py-4" id="algo_raw_average">-</td>
+                            <td class="px-6 py-4" id="algo_raw_standard_deviation">-</td>
+                        </tr>
                         <tr class="bg-white border-b hover:bg-gray-50">
                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Heuristic</th>
                             <td class="px-6 py-4" id="heuristic_rating">-</td>
                             <td class="px-6 py-4" id="heuristic_devination">-</td>
                             <td class="px-6 py-4" id="heuristic_average">-</td>
                             <td class="px-6 py-4" id="heuristic_standard_deviation">-</td>
+                        </tr>
+                        <tr class="bg-white border-b hover:bg-gray-50 hidden toggle-hidden">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Heuristic Raw</th>
+                            <td class="px-6 py-4" id="heuristic_raw_rating">-</td>
+                            <td class="px-6 py-4" id="heuristic_raw_devination">-</td>
+                            <td class="px-6 py-4" id="heuristic_raw_average">-</td>
+                            <td class="px-6 py-4" id="heuristic_raw_standard_deviation">-</td>
                         </tr>
                     </tbody>
                 </table>
