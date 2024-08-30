@@ -1,5 +1,8 @@
 use std::{collections::BTreeSet, sync::Arc};
 
+use fontdb::{Database, Query, Source};
+use fontdue::layout::{CoordinateSystem, Layout, TextStyle};
+use fontdue::Font;
 use mysql::Pool;
 use tera::{Context, Tera};
 use tokio::sync::Mutex;
@@ -75,6 +78,25 @@ pub struct TableData {
 }
 
 pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Vec<Row>) -> TableData {
+    let mut db = Database::new();
+    db.load_system_fonts();
+
+    let query = Query {
+        families: &[fontdb::Family::Name("Lato")],
+        weight: fontdb::Weight::BOLD,
+        ..Default::default()
+    };
+    let id = db.query(&query).unwrap();
+    let face = db.face(id).unwrap();
+    let font_data = match &face.source {
+        Source::Binary(data) => data.as_ref().as_ref(),
+        Source::File(path) => &std::fs::read(path).unwrap_or_else(|_| panic!("Error loading font data from file: {:?}", path)),
+        err => panic!("Error loading font data. {:?}", err),
+    };
+
+    let font = Font::from_bytes(font_data, fontdue::FontSettings::default()).expect("Error loading font");
+    let scale = 70.0;
+
     let mut gradient_vec: Vec<String> = vec![];
     let mut circle_vec: Vec<String> = vec![];
     let mut rows_vec: Vec<String> = vec![];
@@ -95,11 +117,19 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                         ));
                     }
                     Title::UserRating(user) => {
+                        let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+                        layout.append(&[font.clone()], &TextStyle::new(&user.username, scale, 0));
+
+                        let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32) + 120.0;
+
+                        let x = x + rating_data.width / 2 - (width / 2.0) as i32;
+
                         let rating = CreateUserRating::from_user(pool, user.username.clone(), user.contest_type, x + 5, y - 78, user.color_theme).await;
                         if !gradient_id_set.contains(&rating.option.gradient_name) {
                             gradient_vec.push(rating.gradient_svg);
                             gradient_id_set.insert(rating.option.gradient_name);
                         }
+
                         circle_vec.push(rating.circle_svg);
                         text_svg_data.push(format!(
                             "<text x=\"{}\" y=\"{y}\" fill=\"{}\" font-size=\"70\">{}</text>",
@@ -109,6 +139,11 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                         ));
                     }
                     Title::RatingCustom(custom_data) => {
+                        let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+                        layout.append(&[font.clone()], &TextStyle::new(&custom_data.title, scale, 0));
+                        let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32) + 120.0;
+                        let x = x + rating_data.width / 2 - (width / 2.0) as i32;
+
                         let rating = CreateUserRating::from_number(
                             custom_data.title.clone(),
                             custom_data.rating,
@@ -177,7 +212,7 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                     }
                     y += 110;
                 }
-                x += rating_data.width;
+                x += rating_data.width + 30;
             }
             Row::Text(text_data) => {
                 let offset = match text_data.align {
@@ -199,6 +234,12 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                         ));
                     }
                     Title::UserRating(user) => {
+                        let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+                        layout.append(&[font.clone()], &TextStyle::new(&user.username, scale, 0));
+
+                        let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32) + 120.0;
+                        let x = x + text_data.width / 2 - (width / 2.0) as i32;
+
                         let rating = CreateUserRating::from_user(pool, user.username.clone(), user.contest_type, x + 5, y - 78, user.color_theme).await;
                         if !gradient_id_set.contains(&rating.option.gradient_name) {
                             gradient_vec.push(rating.gradient_svg);
@@ -213,6 +254,12 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                         ));
                     }
                     Title::RatingCustom(custom_data) => {
+                        let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
+                        layout.append(&[font.clone()], &TextStyle::new(&custom_data.title, scale, 0));
+
+                        let width = layout.glyphs().last().map_or(0.0, |g| g.x + g.width as f32) + 120.0;
+                        let x = x + text_data.width / 2 - (width / 2.0) as i32;
+
                         let rating = CreateUserRating::from_number(
                             custom_data.title.clone(),
                             custom_data.rating,
@@ -246,7 +293,7 @@ pub async fn create_table(pool: &Arc<Mutex<Pool>>, title: String, table_rows: Ve
                     ));
                     y += 110;
                 }
-                x += text_data.width;
+                x += text_data.width + 30;
             }
         }
         rows_vec.push(text_svg_data.join(""));

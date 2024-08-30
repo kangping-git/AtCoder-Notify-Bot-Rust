@@ -102,9 +102,6 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                 let json: Vec<Submission> = serde_json::from_str(&text).unwrap();
                 for j in json {
                     if j.result == "AC" {
-                        if submissions.contains(&j.problem_id) {
-                            continue;
-                        }
                         let mut diff_text = "null".to_string();
                         let diff = diff.get(&j.problem_id);
                         if let Some(diff) = diff {
@@ -123,7 +120,7 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                         let response_ja = {
                             let response = CreateMessage::default();
                             let embed = CreateEmbed::default()
-                                .title("AC Notify")
+                                .title("[unique] AC Notify")
                                 .description(format!(
                                     "{}は、{}の{}をACしました! Diffは{}です",
                                     j.user_id, j.contest_id, j.problem_id, diff_text
@@ -134,22 +131,27 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                         let response_en = {
                             let response = CreateMessage::default();
                             let embed = CreateEmbed::default()
-                                .title("AC Notify")
+                                .title("[unique] AC Notify")
                                 .description(format!("{} has solved {} in {}. Diff is {}", j.user_id, j.problem_id, j.contest_id, diff_text))
                                 .color(0x00FF00);
                             response.embed(embed)
                         };
                         for k in users_map.get(&i).unwrap() {
                             let channel = ChannelId::new(k.0);
-                            let selected_data: Vec<String> = conn
+                            let selected_data: Vec<(String, i32)> = conn
                                 .exec(
-                                    r"SELECT language FROM server_settings WHERE server_id=:server_id",
+                                    r"SELECT language, ac_notify FROM server_settings WHERE server_id=:server_id",
                                     params! {"server_id" => &k.1},
                                 )
                                 .unwrap();
                             let mut lang = "ja";
                             if selected_data.len() == 1 {
-                                lang = selected_data[0].as_str();
+                                lang = selected_data[0].0.as_str();
+                                if selected_data[0].1 == 1 && submissions.contains(&j.problem_id) {
+                                    continue;
+                                }
+                            } else if submissions.contains(&j.problem_id) {
+                                continue;
                             }
                             if lang == "en" {
                                 let _ = channel.send_message(&ctx.http, response_en.clone()).await;
@@ -157,15 +159,17 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                                 let _ = channel.send_message(&ctx.http, response_ja.clone()).await;
                             }
                         }
-                        conn.exec_drop(
-                            "INSERT INTO submission_data (user_id, problem_id) VALUES (:user_id, :problem_id)",
-                            params! {
-                                "user_id" => j.user_id,
-                                "problem_id" => &j.problem_id
-                            },
-                        )
-                        .unwrap();
-                        submissions.push(j.problem_id.clone())
+                        if !submissions.contains(&j.problem_id) {
+                            conn.exec_drop(
+                                "INSERT INTO submission_data (user_id, problem_id) VALUES (:user_id, :problem_id)",
+                                params! {
+                                    "user_id" => j.user_id,
+                                    "problem_id" => &j.problem_id
+                                },
+                            )
+                            .unwrap();
+                            submissions.push(j.problem_id.clone());
+                        }
                     }
                 }
                 conn.exec_drop(

@@ -138,5 +138,11 @@
         "usage": "/server set-language {language_code}",
         "description": ["Set the default language for the server.", "Use this command to change the language used on the server."],
         "is_owner_only": true
+    },
+    {
+        "name": "set_ac_notify",
+        "usage": "/server set-ac-notify {all|unique}",
+        "description": ["Specify the type of AC to display.", "Use this command to specify whether to display based on the type of AC."],
+        "is_owner_only": true
     }
 ]

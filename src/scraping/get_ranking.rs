@@ -224,7 +224,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             rating: difficulty as i32,
                             has_bronze: false,
                         }),
-                        width: 400,
+                        width: 200,
                         align: Align::Middle,
                         data: vec![],
                     });

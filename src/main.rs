@@ -134,7 +134,9 @@ async fn main() {
             on_error: |error| {
                 println!("{}", error);
                 Box::pin(async move {
-                    error.ctx().unwrap().say("エラーが発生しました。").await.unwrap();
+                    if error.ctx().is_some() {
+                        error.ctx().unwrap().say("エラーが発生しました。").await.unwrap();
+                    }
                 })
             },
             event_handler: |ctx, event, _framework, data| {
@@ -221,6 +223,6 @@ async fn main() {
         })
         .build();
 
-    let client = serenity::ClientBuilder::new(token, intents).framework(framework).await;
+    let client = serenity::ClientBuilder::new(token.trim(), intents).framework(framework).await;
     client.unwrap().start().await.unwrap();
 }
