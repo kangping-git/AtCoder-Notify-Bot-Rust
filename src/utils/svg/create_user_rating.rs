@@ -158,15 +158,16 @@ impl CreateUserRating {
                 ]
             } else {
                 &vec![
-                    "#404040",
-                    "#808080",
-                    "#804000",
-                    "#008000",
-                    "#00C0C0",
-                    "#0000FF",
-                    "#C0C000",
-                    "#FF8000",
-                    "#FF0000",
+                    "#FFFFFF",
+                    "#C0C0C0",
+                    "#B08C56",
+                    "#3FAF3F",
+                    "#42E0E0",
+                    "#8888FF",
+                    "#FFFF56",
+                    "#FFB836",
+                    "#FF6767",
+                    "rgb(150, 92, 44)",
                     "rgb(128, 128, 128)",
                     "rgb(255, 215, 0)",
                 ]
@@ -229,11 +230,16 @@ impl CreateUserRating {
         } else {
             std::cmp::min((rating / 400) as usize + 1, rating_colors.len() - 1)
         };
+        let stroke_color = if rating == 0 {
+            0
+        } else {
+            std::cmp::min((rating / 400) as usize + 1, stroke_colors.len() - 1)
+        };
         let mut ctx = Context::new();
         ctx.insert("percent", &percent);
         ctx.insert("user_name", &format!("gradient_rating_{}", rating));
         ctx.insert("rating_color", &rating_colors[rating_color]);
-        ctx.insert("stroke_color", &stroke_colors[rating_color]);
+        ctx.insert("stroke_color", &stroke_colors[stroke_color]);
         ctx.insert("fill_url", &fill);
         ctx.insert("username", &title);
         ctx.insert("x", &(x + 100));
@@ -246,7 +252,7 @@ impl CreateUserRating {
             text_svg: tmpl.render("user_rating_text.svg", &ctx).unwrap(),
             option: UserRatingOption {
                 rating: num,
-                border_color: stroke_colors[rating_color].to_string(),
+                border_color: rating_colors[stroke_color].to_string(),
                 text: title,
                 gradient_name: fill,
             },
