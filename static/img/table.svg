@@ -1,6 +1,6 @@
 <svg width="{{width}}" height="{{height}}"  viewBox="0 0 {{width}} {{height}}" xmlns="http://www.w3.org/2000/svg" font-family="Lato">
   <rect x="0" y="0" width="{{width}}" height="{{height}}" fill="#222"/>
-  <text x="{{title_x}}" y="70" font-weight="bold" text-anchor="middle" font-size="70" fill="white">{{title}}</text>
+  <text x="{{title_x}}" y="70" font-weight="bold" text-anchor="middle" font-size="70" fill="white" font-family="'Noto Sans'" >{{title}}</text>
   <defs>
     {{gradient}}
     <linearGradient id="Bronze" x1="0" x2="1" y1="0" y2="0">

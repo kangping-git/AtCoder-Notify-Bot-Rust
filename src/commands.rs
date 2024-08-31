@@ -12,4 +12,5 @@ pub mod set_ac_notify;
 pub mod set_language;
 pub mod set_notification_contest;
 pub mod set_notification_submission;
+pub mod set_notify_everyone;
 pub mod show_notification;

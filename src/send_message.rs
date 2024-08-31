@@ -35,8 +35,10 @@ pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) -> Re
         .filter(|contest| {
             let start_time = chrono::DateTime::parse_from_str(&contest.start_time, "%Y-%m-%d %H:%M:%S%z").unwrap();
             let offset = chrono::Duration::minutes(contest.duration as i64);
-            let end_time = start_time + offset;
-            start_time.date_naive() <= chrono::Local::now().date_naive() && end_time.date_naive() >= chrono::Local::now().date_naive()
+            let end_time = (start_time + offset).date_naive();
+            let start_time = start_time.date_naive();
+            let now = chrono::Local::now().date_naive();
+            start_time <= now && now <= end_time
         })
         .collect();
     if !contests.is_empty() {
@@ -49,7 +51,7 @@ pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) -> Re
                 let end_time = start_time + offset;
                 let embed = CreateEmbed::new()
                     .title(&contest.name)
-                    .url(contest.contest_id.clone())
+                    .url(format!("https://{}", contest.contest_id))
                     .field("開催時間", format!("<t:{0}:f>(<t:{0}:R>)", start_time.timestamp()), false)
                     .field("終了時間", format!("<t:{0}:f>(<t:{0}:R>)", end_time.timestamp()), false)
                     .field("Rated対象", format!("`{}`", contest.rating_range_raw), false);
@@ -63,7 +65,7 @@ pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) -> Re
             if i != "null" {
                 let channel_id = i.parse::<u64>().unwrap();
                 let channel = ChannelId::new(channel_id);
-                let temp = channel.send_message(ctx.http.clone(), response.clone()).await;
+                let temp = channel.send_message(&ctx.http, response.clone()).await;
                 match temp {
                     Ok(t) => {
                         println!("{:?}", t);

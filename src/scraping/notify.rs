@@ -66,29 +66,38 @@ pub async fn notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) -> Result<
                 )
                 .unwrap();
             }
-            (
-                CreateMessage::new().content("@everyone").add_embeds(embed_vec_ja),
-                CreateMessage::new().content("@everyone").add_embeds(embed_vec_en),
-            )
+            (embed_vec_ja, embed_vec_en)
         };
         for i in channels {
             if i.1 != "null" {
-                let selected_data: Vec<String> = conn
+                let selected_data: Vec<(String, i32)> = conn
                     .exec(
-                        r"SELECT language FROM server_settings WHERE server_id=:server_id",
+                        r"SELECT language,do_everyone FROM server_settings WHERE server_id=:server_id",
                         params! {"server_id" => i.0.parse::<u64>().unwrap()},
                     )
                     .unwrap();
                 let mut lang = "ja";
                 if selected_data.len() == 1 {
-                    lang = selected_data[0].as_str();
+                    lang = selected_data[0].0.as_str();
+                }
+                let mut do_everyone = true;
+                if selected_data.len() == 1 {
+                    do_everyone = selected_data[0].1 == 1;
                 }
 
                 let channel_id = ChannelId::new(i.1.parse::<u64>().unwrap());
                 if lang == "ja" {
-                    let _ = channel_id.send_message(&ctx.http, response_ja.clone()).await;
+                    let mut response = CreateMessage::new().embeds(response_ja.clone());
+                    if do_everyone {
+                        response = response.content("@everyone");
+                    }
+                    let _ = channel_id.send_message(&ctx.http, response).await;
                 } else {
-                    let _ = channel_id.send_message(&ctx.http, response_en.clone()).await;
+                    let mut response = CreateMessage::new().embeds(response_en.clone());
+                    if do_everyone {
+                        response = response.content("@everyone");
+                    }
+                    let _ = channel_id.send_message(&ctx.http, response).await;
                 }
             }
         }

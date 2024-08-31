@@ -390,26 +390,24 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             has_bronze: false,
                             color_theme: Theme::Dark,
                         }));
+                        let mut is_rated = users.IsRated;
+                        if i.contest_type == 1 {
+                            is_rated = users.IsRated && users.TotalResult.Count > 0
+                        }
                         rated_list.push(TextConfig {
-                            value: if users.IsRated { "Yes".to_string() } else { "No".to_string() },
-                            color: if users.IsRated { "white" } else { "gray" }.to_string(),
+                            value: if is_rated { "Yes".to_string() } else { "No".to_string() },
+                            color: if is_rated { "white" } else { "gray" }.to_string(),
                         });
                         let mut penalty = users.TotalResult.Penalty;
                         if users.TotalResult.Score == 0 {
                             penalty = users.TotalResult.Count
                         }
-                        let total_text = if penalty > 0 && users.TotalResult.Score > 0 {
+                        let total_text = if penalty > 0 {
                             total.push(TextConfig {
                                 value: format!("{}<tspan fill=\"#f33\">({})</tspan>", users.TotalResult.Score / 100, penalty),
                                 color: "white".to_string(),
                             });
                             format!("{}({})", users.TotalResult.Score / 100, penalty)
-                        } else if penalty > 0 {
-                            total.push(TextConfig {
-                                value: format!("({})", penalty),
-                                color: "#f33".to_string(),
-                            });
-                            format!("{}", penalty)
                         } else {
                             total.push(TextConfig {
                                 value: format!("{}", users.TotalResult.Score / 100),

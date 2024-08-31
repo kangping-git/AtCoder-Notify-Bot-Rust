@@ -93,7 +93,7 @@ pub async fn create_roles(ctx: Context<'_>) -> Result<(), Error> {
 
     let mut transaction = conn.start_transaction(TxOpts::default()).unwrap();
 
-    for i in ROLE_COLORS_AND_NAMES.iter().enumerate() {
+    for i in ROLE_COLORS_AND_NAMES.iter().enumerate().rev() {
         let (name, color) = i.1;
         let guild = ctx.guild_id().unwrap();
         let output = guild.create_role(ctx.http(), EditRole::new().name(*name).colour(Colour::from_rgb(color.0, color.1, color.2))).await?;
