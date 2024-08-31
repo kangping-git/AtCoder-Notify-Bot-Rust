@@ -48,7 +48,7 @@ pub fn get_diff(standing_data: ranking_types::StandingsJson, contest_is_rated: b
         let retreated = total_submission == 0;
 
         let is_rated = result_row.IsRated;
-        let rating = result_row.OldRating;
+        let rating = result_row.Rating;
         let prev_contests = result_row.Competitions;
         let user_name = result_row.UserScreenName;
 
