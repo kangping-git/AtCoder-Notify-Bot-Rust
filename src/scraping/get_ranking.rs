@@ -337,9 +337,9 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                                     * 1200.0
                         } else {
                             let mut qs = vec![];
-                            for i in performance_list {
+                            for i in &performance_list {
                                 for j in 1..=100 {
-                                    qs.push(i as f64 - S * (j as f64).log(f64::consts::E));
+                                    qs.push(*i as f64 - S * (j as f64).log(f64::consts::E));
                                 }
                             }
                             qs.sort_by(|a, b| b.partial_cmp(a).unwrap());

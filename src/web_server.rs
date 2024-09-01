@@ -83,6 +83,15 @@ async fn deviation() -> impl Responder {
     };
     HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
 }
+#[get("/rating_simulator/")]
+async fn rating_simulator() -> impl Responder {
+    let file_content = if env::var("DEBUG").is_err() {
+        include_str!("../static/pages/src/rating_simulator.html").to_string()
+    } else {
+        fs::read_to_string("static/pages/src/rating_simulator.html").unwrap()
+    };
+    HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
+}
 #[get("/output.css")]
 async fn output_css() -> impl Responder {
     let file_content = if env::var("DEBUG").is_err() {
@@ -279,6 +288,7 @@ pub async fn start() {
             .service(data_rating)
             .service(deviation)
             .service(icon_white)
+            .service(rating_simulator)
             .default_service(web::to(default_handler))
     })
     .bind(("127.0.0.1", port.parse::<u16>().unwrap()))

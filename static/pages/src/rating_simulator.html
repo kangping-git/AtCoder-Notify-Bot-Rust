@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>AtCoder Rating Simulator</title>
+        <link href="/output.css" rel="stylesheet" />
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"
+            integrity="sha512-CQBWl4fJHWbryGE+Pc7UAxWMUMNMWzWxF4SQo9CgkJIN1kx6djDQZjh3Y8SZ1d+6I+1zze6Z7kHXO7q3UyZAWw=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+        <script src="
+        https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js
+        "></script>
+        <script>
+            const S = 724.4744301;
+            const R = 0.8271973364;
+            const rating_colors = ["#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000", "#FF0000"];
+            const bg_colors = ["#D8D8D8", "#D8C5B2", "#B2D8B2", "#B2ECEC", "#B2B2FF", "#ECECB2", "#FFD8B2", "#FFB2B2"];
+            window.addEventListener("load", () => {
+                async function get_user_history(username, rating_type) {
+                    if (username == "") {
+                        return {
+                            user_id: "",
+                            found: false,
+                        };
+                    }
+                    let url = `/api/atcoder/history/${username}?contest_type=${rating_type}`;
+                    let response = await fetch(url);
+                    let data = await response.json();
+                    return data;
+                }
+                let timeout = null;
+                async function update() {
+                    if (count.value == "custom") {
+                        count_custom.style.display = "inline";
+                    } else {
+                        count_custom.style.display = "none";
+                    }
+                    clearTimeout(timeout);
+                    timeout = setTimeout(async () => {
+                        let data = await get_user_history(username.value, rating_type.value);
+                        if (!data.found) {
+                            username.style.color = "black";
+                        }
+
+                        let count_value = count.value == "custom" ? count_custom.value : count.value;
+                        count_value = Number(count_value);
+
+                        let rating_history = data.history ? data.history : [];
+                        let rating = rating_history.at(-1) ? rating_history.at(-1).rating : 0;
+                        let highest = rating_history.reduce((a, b) => (a.rating > b.rating ? a : b), { rating: 0 }).rating;
+                        username.style.color = rating_colors[Math.min(rating_colors.length - 1, Math.floor(rating / 400))];
+
+                        let x_data = [];
+                        let y_data = [];
+
+                        let performance = rating_history.map((x) => x.performance);
+                        for (let i = 1; i <= Math.max(3600, rating + 800); ++i) {
+                            let performance_raw = i;
+                            if (i < 400) {
+                                performance_raw = 400 - 400 * Math.log(400 / performance_raw);
+                            }
+                            let performance_copy = [...performance];
+                            for (let i = 0; i < count_value; ++i) {
+                                performance_copy.push(performance_raw);
+                            }
+                            if (rating_type.value == "algo") {
+                                performance_copy.reverse();
+                                let contests = performance_copy.length;
+                                let numerator = performance_copy
+                                    .map((performance, i) => {
+                                        return Math.pow(2, performance / 800) * Math.pow(0.9, i + 1);
+                                    })
+                                    .reduce((a, b) => a + b, 0);
+                                let denominator = Array.from({ length: contests }, (_, i) => Math.pow(0.9, i + 1)).reduce((a, b) => a + b, 0);
+                                let rating =
+                                    800.0 * Math.log2(numerator / denominator) -
+                                    ((Math.sqrt(1.0 - 0.81 ** (performance_copy.length + 1)) / (1.0 - 0.9 ** (performance_copy.length + 1)) - 1.0) /
+                                        (Math.sqrt(19.0) - 1.0)) *
+                                        1200.0;
+                                if (rating <= 400.0) {
+                                    rating = 400.0 / Math.exp((400.0 - rating) / 400.0);
+                                }
+                                x_data.push(i);
+                                y_data.push(Math.round(rating));
+                            } else {
+                                let qs = [];
+                                for (let i of performance_copy) {
+                                    for (let j = 1; j <= 100; j++) {
+                                        qs.push(i - S * Math.log(j));
+                                    }
+                                }
+                                qs.sort((a, b) => b - a);
+                                let numerator = 0.0;
+                                let denominator = 0.0;
+                                for (let i = 99; i >= 0; --i) {
+                                    numerator = numerator * R + qs[i];
+                                    denominator = denominator * R + 1.0;
+                                }
+                                let rating = numerator / denominator;
+                                if (rating <= 400.0) {
+                                    rating = 400.0 / Math.exp((400.0 - rating) / 400.0);
+                                }
+                                x_data.push(i);
+                                y_data.push(Math.round(rating));
+                            }
+                        }
+                        chart.data.labels = x_data;
+                        chart.data.datasets[0].data = y_data;
+                        chart.options.plugins.annotation.annotations.rating.yMin = rating;
+                        chart.options.plugins.annotation.annotations.rating.yMax = rating;
+                        chart.options.plugins.annotation.annotations.highest.yMax = highest;
+                        chart.options.plugins.annotation.annotations.highest.yMin = highest;
+                        chart.update();
+                    }, 200);
+                }
+                const username = document.getElementById("username");
+                const rating_type = document.getElementById("rating_type");
+                const count = document.getElementById("count");
+                const count_custom = document.getElementById("count_custom");
+                username.addEventListener("input", update);
+                rating_type.addEventListener("input", update);
+                count.addEventListener("input", update);
+                count_custom.addEventListener("input", update);
+                const copy_image = document.getElementById("copy_image");
+                copy_image.addEventListener("click", () => {
+                    canvas.toBlob(async (blob) => {
+                        const item = new ClipboardItem({ "image/png": blob });
+                        await navigator.clipboard.write([item]);
+                    });
+                });
+                const canvas = document.getElementById("canvas");
+
+                function drawBackground() {
+                    try {
+                        let ctx = canvas.getContext("2d");
+                        let rating_height = chart.chartArea.height;
+                        let max = Math.floor(chart.scales.y.max / 400);
+                        let min = Math.floor(chart.scales.y.min / 400);
+                        ctx.fillStyle = "white";
+                        ctx.fillRect(0, 0, chart.width, chart.height);
+                        for (let i = min; i < max; ++i) {
+                            ctx.fillStyle = bg_colors[Math.min(i, bg_colors.length - 1)];
+                            ctx.fillRect(
+                                chart.chartArea.left,
+                                (rating_height / (max - min)) * (max - i - 1) + chart.chartArea.top,
+                                chart.chartArea.width,
+                                rating_height / (max - min)
+                            );
+                        }
+                    } catch (e) {}
+                }
+
+                let chart = new Chart(canvas, {
+                    type: "line",
+                    data: {
+                        labels: new Array(4800).fill(0).map((_, i) => i + 1),
+                        datasets: [
+                            {
+                                label: "Rating",
+                                data: new Array(4800).fill(0),
+                                borderColor: "black",
+                                backgroundColor: "rgba(0,0,0,0)",
+                                yAxisID: "y",
+                                tension: 0,
+                            },
+                        ],
+                    },
+                    plugins: [
+                        {
+                            beforeDraw: drawBackground,
+                        },
+                    ],
+                    options: {
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            annotation: {
+                                annotations: {
+                                    highest: {
+                                        type: "line",
+                                        yMin: 0,
+                                        yMax: 0,
+                                        borderColor: "rgb(255, 99, 132)",
+                                        borderWidth: 2,
+                                        label: {
+                                            display: true,
+                                            content: "highest",
+                                            position: "end",
+                                        },
+                                    },
+                                    rating: {
+                                        type: "line",
+                                        yMin: 0,
+                                        yMax: 0,
+                                        borderColor: "rgb(255, 99, 132)",
+                                        borderWidth: 2,
+                                        label: {
+                                            display: true,
+                                            content: "rating",
+                                            position: "start",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        tooltips: {
+                            mode: "nearest",
+                            intersect: false,
+                        },
+                        responsive: true,
+                        elements: {
+                            point: {
+                                radius: 0,
+                            },
+                        },
+                        scales: {
+                            y: {
+                                type: "linear",
+                                position: "left",
+                                ticks: {
+                                    min: 0,
+                                    stepSize: 400,
+                                    callback: function (val) {
+                                        return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                                    },
+                                },
+                                gridLines: {
+                                    display: false,
+                                },
+                            },
+                        },
+                        annotation: {
+                            annotations: [
+                                {
+                                    type: "line",
+                                    scaleID: "y",
+                                    mode: "horizontal",
+                                    value: 500,
+                                    borderColor: "black",
+                                    borderWidth: 2,
+                                    label: {
+                                        enabled: true,
+                                        content: "目標",
+                                    },
+                                },
+                            ],
+                        },
+                        maintainAspectRatio: false,
+                    },
+                });
+                update();
+            });
+        </script>
+    </head>
+    <body class="bg-gradient-to-tr from-green-500 to-cyan-400 h-screen content-center font-sans">
+        <div class="bg-white rounded-xl w-4/5 h-4/5 mx-auto p-7 text-center relative">
+            <h1 class="text-3xl">AtCoder Rating Simulator(仮)</h1>
+            <br />
+
+            <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-5"
+                id="username"
+                type="text"
+                placeholder="Username"
+            />
+            <select
+                id="rating_type"
+                class="inline-block bg-gray-50 w-32 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            >
+                <option value="algo">Algo</option>
+                <option value="heuristic">Heuristic</option>
+            </select>
+            <select
+                id="count"
+                class="inline-block bg-gray-50 w-28 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            >
+                <option value="1">× 1</option>
+                <option value="2">× 2</option>
+                <option value="3">× 3</option>
+                <option value="4">× 4</option>
+                <option value="5">× 5</option>
+                <option value="6">× 6</option>
+                <option value="7">× 7</option>
+                <option value="8">× 8</option>
+                <option value="9">× 9</option>
+                <option value="10">× 10</option>
+                <option value="100">× 100</option>
+                <option value="custom">custom</option>
+            </select>
+            <input
+                class="hidden shadow appearance-none border rounded w-24 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mb-5"
+                id="count_custom"
+                type="number"
+                placeholder="Count"
+                value="20"
+            />
+
+            <div class="mx-auto w-5/6 h-[calc(80vh-250px)]">
+                <canvas id="canvas"></canvas>
+            </div>
+
+            <div class="absolute bottom-5 right-5">
+                <button class="bg-black text-white px-4 py-2 text-sm rounded-md" id="copy_image">画像をコピー</button>
+            </div>
+            <div class="absolute bottom-5 text-center left-1/3 -translate-x-1/2 border-t-2 text-xs sm:left-1/2 sm:text-sm">
+                made by <a href="/">atcoder-notify.com</a><br />data from <a href="https://atcoder.jp">atcoder.jp</a>
+            </div>
+        </div>
+    </body>
+</html>
