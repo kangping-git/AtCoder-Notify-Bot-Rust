@@ -114,6 +114,8 @@
                         chart.options.plugins.annotation.annotations.rating.yMax = rating;
                         chart.options.plugins.annotation.annotations.highest.yMax = highest;
                         chart.options.plugins.annotation.annotations.highest.yMin = highest;
+                        chart.options.plugins.annotation.annotations.highest.label.content = `highest ${highest}`;
+                        chart.options.plugins.annotation.annotations.rating.label.content = `current ${rating}`;
                         chart.update();
                     }, 200);
                 }
@@ -179,6 +181,10 @@
                             legend: {
                                 display: false,
                             },
+                            tooltip: {
+                                mode: "index",
+                                intersect: false,
+                            },
                             annotation: {
                                 annotations: {
                                     highest: {
@@ -207,10 +213,6 @@
                                     },
                                 },
                             },
-                        },
-                        tooltips: {
-                            mode: "nearest",
-                            intersect: false,
                         },
                         responsive: true,
                         elements: {
