@@ -560,7 +560,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                 let channel = ChannelId::new(channel_id.parse::<u64>().unwrap());
                 let response = {
                     let mut message = CreateMessage::new();
-                    message = message.add_file(CreateAttachment::bytes(
+                    message = message.content(format!("最終更新:<t:{0}:f>(<t:{0}:R>)", chrono::Local::now().timestamp())).add_file(CreateAttachment::bytes(
                         svg_to_png(svg.svg.as_str(), svg.width as u32, svg.height as u32, 1.0, 1.0),
                         "ranking.png",
                     ));
@@ -575,10 +575,9 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             .edit_message(
                                 ctx.http.clone(),
                                 message_id[0].message_id as u64,
-                                EditMessage::default().new_attachment(CreateAttachment::bytes(
-                                    svg_to_png(svg.svg.as_str(), svg.width as u32, svg.height as u32, 1.0, 1.0),
-                                    "ranking.png",
-                                )),
+                                EditMessage::default().content(format!("最終更新:<t:{0}:f>(<t:{0}:R>)", chrono::Local::now().timestamp())).new_attachment(
+                                    CreateAttachment::bytes(svg_to_png(svg.svg.as_str(), svg.width as u32, svg.height as u32, 1.0, 1.0), "ranking.png"),
+                                ),
                             )
                             .await;
                     }

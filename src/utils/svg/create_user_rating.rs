@@ -252,7 +252,7 @@ impl CreateUserRating {
             text_svg: tmpl.render("user_rating_text.svg", &ctx).unwrap(),
             option: UserRatingOption {
                 rating: num,
-                border_color: rating_colors[stroke_color].to_string(),
+                border_color: rating_colors[rating_color].to_string(),
                 text: title,
                 gradient_name: fill,
             },
