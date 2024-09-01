@@ -101,10 +101,9 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
         .iter()
         .filter(|contest| {
             let start_time = chrono::DateTime::parse_from_str(&contest.start_time, "%Y-%m-%d %H:%M:%S%z").unwrap();
-            let offset = chrono::Duration::minutes(contest.duration as i64);
+            let offset = chrono::Duration::minutes(contest.duration as i64 + 1);
             let end_time = start_time + offset;
             start_time <= chrono::Local::now() && chrono::Local::now() <= end_time
-            // chrono::Local::now() <= end_time
         })
         .collect();
     let messages = conn

@@ -12,6 +12,7 @@ struct CommandDesciption {
     name: String,
     usage: String,
     description: Vec<String>,
+    is_owner_only: bool,
 }
 
 /// Display a list of all available commands and their usage.
@@ -43,7 +44,15 @@ pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
         .title("help")
         .author(CreateEmbedAuthor::new("").name("AtCoder Notify Bot v3").icon_url(ctx.data().avatar_url.as_str()).url("https://atcoder-notify.com/"));
     for i in help_obj {
-        embed = embed.field(i.usage, i.description.join("\n"), false);
+        embed = embed.field(
+            if i.is_owner_only {
+                format!("[**Owner Only**] {}", i.usage)
+            } else {
+                i.usage.to_string()
+            },
+            i.description.join("\n"),
+            false,
+        );
     }
 
     let response = poise::CreateReply::default().embed(embed).ephemeral(true);

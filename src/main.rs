@@ -19,6 +19,7 @@ use poise::serenity_prelude::CreateActionRow;
 use poise::serenity_prelude::CreateButton;
 use poise::serenity_prelude::CreateInteractionResponse;
 use poise::serenity_prelude::CreateInteractionResponseMessage;
+use poise::CreateReply;
 use reqwest::cookie::Jar;
 use scraping::atcoder_ratings::get_ratings;
 use scraping::contest_type::ContestRatingType;
@@ -94,7 +95,7 @@ async fn interval(ctx: serenity::Context) {
         }
         if count == 0 {
             let activity_text = match activity_text_type {
-                0 => "*/help*でお待ちしています".to_string(),
+                0 => "/help でお待ちしています".to_string(),
                 1 => format!("{}鯖({}ユーザ)", ctx.cache.guild_count(), ctx.cache.user_count()),
                 _ => "".to_string(),
             };
@@ -135,7 +136,7 @@ async fn main() {
                 println!("{}", error);
                 Box::pin(async move {
                     if error.ctx().is_some() {
-                        error.ctx().unwrap().say("エラーが発生しました。").await.unwrap();
+                        error.ctx().unwrap().send(CreateReply::default().content("エラーが発生しました。").ephemeral(true)).await.unwrap();
                     }
                 })
             },

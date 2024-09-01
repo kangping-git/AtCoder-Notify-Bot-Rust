@@ -5,7 +5,8 @@
         "description": [
             "Display information about upcoming AtCoder contests.",
             "This command provides a list of all the contests that are scheduled to take place in the near future."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "current_contests",
@@ -13,12 +14,14 @@
         "description": [
             "Show details about contests that are currently ongoing.",
             "This command helps you stay updated with the contests that are live and currently in progress."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "past_contests",
         "usage": "/atcoder contest past",
-        "description": ["Retrieve information on past AtCoder contests.", "Use this command to review the contests that have already concluded."]
+        "description": ["Retrieve information on past AtCoder contests.", "Use this command to review the contests that have already concluded."],
+        "is_owner_only": false
     },
     {
         "name": "rating",
@@ -26,7 +29,8 @@
         "description": [
             "Display the latest rating for a specified AtCoder user.",
             "This command provides the most recent rating of the given user, useful for tracking their performance."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "rating_history",
@@ -34,7 +38,8 @@
         "description": [
             "Show the rating history for a specified AtCoder user.",
             "This command allows you to view the historical ratings of the given user over time."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "set_notification_contest",
@@ -78,7 +83,8 @@
         "description": [
             "Display the currently set notification channels for contests and submissions.",
             "This command helps you review which channels are configured to receive notifications."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "link_account",
@@ -86,7 +92,8 @@
         "description": [
             "Link a specified AtCoder account with the current Discord account.",
             "This command connects your Discord account to the provided AtCoder username, allowing for personalized updates."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "unlink_account",
@@ -94,7 +101,8 @@
         "description": [
             "Unlink the AtCoder account from the current Discord account.",
             "This command removes the connection between your Discord account and any associated AtCoder account."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "show_linked_account",
@@ -102,7 +110,8 @@
         "description": [
             "Show the AtCoder account currently linked to the Discord account.",
             "This command displays information about the AtCoder account that is currently associated with your Discord profile."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "register_account",
@@ -110,12 +119,17 @@
         "description": [
             "Register a specified AtCoder account without linking it to the Discord account.",
             "This command allows you to keep track of AtCoder accounts without creating a link to your Discord profile."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "delete_account",
         "usage": "/atcoder delete-account {atcoder_username}",
-        "description": ["Delete the registration of a specified AtCoder account.", "Use this command to remove an AtCoder account from your registration list."]
+        "description": [
+            "Delete the registration of a specified AtCoder account.",
+            "Use this command to remove an AtCoder account from your registration list."
+        ],
+        "is_owner_only": false
     },
     {
         "name": "show_accounts",
@@ -123,7 +137,8 @@
         "description": [
             "Display a list of all currently registered AtCoder accounts.",
             "This command helps you view all AtCoder accounts that have been registered without linking them to Discord."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "help",
@@ -131,7 +146,8 @@
         "description": [
             "Display a list of all available commands and their usage.",
             "This command provides an overview of all commands you can use with the AtCoder bot, including their syntax and purpose."
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "set_language",

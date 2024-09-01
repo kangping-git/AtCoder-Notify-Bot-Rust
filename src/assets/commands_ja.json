@@ -5,17 +5,20 @@
         "description": [
             "今後開催されるAtCoderコンテストの情報を表示します。",
             "このコマンドは、近いうちに予定されているすべてのコンテストのリストを提供します。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "current_contests",
         "usage": "/atcoder contest current",
-        "description": ["現在進行中のコンテストの詳細を表示します。", "このコマンドは、ライブで進行中のコンテストの最新情報を提供します。"]
+        "description": ["現在進行中のコンテストの詳細を表示します。", "このコマンドは、ライブで進行中のコンテストの最新情報を提供します。"],
+        "is_owner_only": false
     },
     {
         "name": "past_contests",
         "usage": "/atcoder contest past",
-        "description": ["過去のAtCoderコンテストの情報を取得します。", "このコマンドを使用すると、既に終了したコンテストの詳細を確認できます。"]
+        "description": ["過去のAtCoderコンテストの情報を取得します。", "このコマンドを使用すると、既に終了したコンテストの詳細を確認できます。"],
+        "is_owner_only": false
     },
     {
         "name": "rating",
@@ -23,12 +26,14 @@
         "description": [
             "指定されたユーザーの最新のレーティングを表示します。",
             "このコマンドは、特定のユーザーの最新のレーティングを提供し、そのパフォーマンスを追跡するのに役立ちます。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "rating_history",
         "usage": "/atcoder rating history {username} {rating_type}",
-        "description": ["指定されたユーザーのレーティング履歴を表示します。", "このコマンドを使用すると、特定のユーザーのレーティングの変遷を確認できます。"]
+        "description": ["指定されたユーザーのレーティング履歴を表示します。", "このコマンドを使用すると、特定のユーザーのレーティングの変遷を確認できます。"],
+        "is_owner_only": false
     },
     {
         "name": "set_notification_contest",
@@ -63,7 +68,8 @@
         "description": [
             "現在設定されているコンテストと提出情報の通知チャンネルを表示します。",
             "このコマンドは、通知を受け取るように設定されたチャンネルを確認するのに役立ちます。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "link_account",
@@ -71,7 +77,8 @@
         "description": [
             "指定されたAtCoderアカウントを現在のDiscordアカウントにリンクします。",
             "このコマンドを使用すると、指定されたAtCoderユーザー名をDiscordアカウントに接続して、個別の更新情報を受け取ることができます。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "unlink_account",
@@ -79,7 +86,8 @@
         "description": [
             "現在のDiscordアカウントからAtCoderアカウントのリンクを解除します。",
             "このコマンドは、Discordアカウントと関連付けられたAtCoderアカウントの接続を解除します。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "show_linked_account",
@@ -87,7 +95,8 @@
         "description": [
             "現在のDiscordアカウントにリンクされているAtCoderアカウントを表示します。",
             "このコマンドは、現在のDiscordプロフィールに関連付けられているAtCoderアカウントの情報を表示します。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "register_account",
@@ -95,7 +104,8 @@
         "description": [
             "指定されたAtCoderアカウントをDiscordアカウントとリンクせずに登録します。",
             "このコマンドを使用すると、DiscordプロフィールにリンクせずにAtCoderアカウントを追跡できます。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "delete_account",
@@ -103,7 +113,8 @@
         "description": [
             "指定されたAtCoderアカウントの登録を削除します。",
             "このコマンドを使用すると、登録リストから指定されたAtCoderアカウントを削除できます。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "show_accounts",
@@ -111,7 +122,8 @@
         "description": [
             "現在登録されているすべてのAtCoderアカウントのリストを表示します。",
             "このコマンドは、Discordにリンクせずに登録されているすべてのAtCoderアカウントを表示するのに役立ちます。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "help",
@@ -119,7 +131,8 @@
         "description": [
             "利用可能なすべてのコマンドとその使用方法のリストを表示します。",
             "このコマンドは、AtCoderボットで使用できるすべてのコマンドの概要、その構文と目的を提供します。"
-        ]
+        ],
+        "is_owner_only": false
     },
     {
         "name": "set_language",
