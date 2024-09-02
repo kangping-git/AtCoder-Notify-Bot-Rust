@@ -67,6 +67,7 @@
                             for (let i = 0; i < count_value; ++i) {
                                 performance_copy.push(performance_raw);
                             }
+                            console.log(performance_copy);
                             if (rating_type.value == "algo") {
                                 performance_copy.reverse();
                                 let contests = performance_copy.length;
@@ -78,7 +79,7 @@
                                 let denominator = Array.from({ length: contests }, (_, i) => Math.pow(0.9, i + 1)).reduce((a, b) => a + b, 0);
                                 let rating =
                                     800.0 * Math.log2(numerator / denominator) -
-                                    ((Math.sqrt(1.0 - 0.81 ** (performance_copy.length + 1)) / (1.0 - 0.9 ** (performance_copy.length + 1)) - 1.0) /
+                                    ((Math.sqrt(1.0 - 0.81 ** performance_copy.length) / (1.0 - 0.9 ** performance_copy.length) - 1.0) /
                                         (Math.sqrt(19.0) - 1.0)) *
                                         1200.0;
                                 if (rating <= 400.0) {

@@ -329,8 +329,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             let denominator: f64 = (1..=rated_contests).map(|i| 0.9_f64.powi(i)).sum();
 
                             800.0 * (numerator / denominator).log2()
-                                - ((f64::sqrt(1.0 - 0.81_f64.powi((performance_list.len() + 1) as i32))
-                                    / (1.0 - 0.9_f64.powi((performance_list.len() + 1) as i32)))
+                                - ((f64::sqrt(1.0 - 0.81_f64.powi((performance_list.len()) as i32)) / (1.0 - 0.9_f64.powi((performance_list.len()) as i32)))
                                     - 1.0)
                                     / (f64::sqrt(19.0) - 1.0)
                                     * 1200.0

@@ -74,6 +74,11 @@ async fn home() -> impl Responder {
     };
     HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
 }
+#[get("/418/")]
+async fn im_a_teapot() -> impl Responder {
+    let file_content = include_str!("../static/pages/src/418.html").to_string();
+    HttpResponse::ImATeapot().content_type(ContentType::html()).body(file_content)
+}
 #[get("/deviation/")]
 async fn deviation() -> impl Responder {
     let file_content = if env::var("DEBUG").is_err() {
@@ -289,6 +294,7 @@ pub async fn start() {
             .service(deviation)
             .service(icon_white)
             .service(rating_simulator)
+            .service(im_a_teapot)
             .default_service(web::to(default_handler))
     })
     .bind(("127.0.0.1", port.parse::<u16>().unwrap()))
