@@ -198,6 +198,7 @@
                                             display: true,
                                             content: "highest",
                                             position: "end",
+                                            z: 1000,
                                         },
                                     },
                                     rating: {
@@ -210,6 +211,7 @@
                                             display: true,
                                             content: "rating",
                                             position: "start",
+                                            z: 1000,
                                         },
                                     },
                                 },
@@ -236,22 +238,6 @@
                                     display: false,
                                 },
                             },
-                        },
-                        annotation: {
-                            annotations: [
-                                {
-                                    type: "line",
-                                    scaleID: "y",
-                                    mode: "horizontal",
-                                    value: 500,
-                                    borderColor: "black",
-                                    borderWidth: 2,
-                                    label: {
-                                        enabled: true,
-                                        content: "目標",
-                                    },
-                                },
-                            ],
                         },
                         maintainAspectRatio: false,
                     },
