@@ -12,17 +12,17 @@ use std::{
 use tokio::{sync::Mutex, time::sleep};
 
 #[derive(Deserialize, Serialize)]
-struct Submission {
-    id: i64,
-    epoch_second: i64,
-    problem_id: String,
-    contest_id: String,
-    user_id: String,
-    language: String,
-    point: f64,
-    length: i32,
-    result: String,
-    execution_time: Option<i32>,
+pub struct Submission {
+    pub id: i64,
+    pub epoch_second: i64,
+    pub problem_id: String,
+    pub contest_id: String,
+    pub user_id: String,
+    pub language: String,
+    pub point: f64,
+    pub length: i32,
+    pub result: String,
+    pub execution_time: Option<i32>,
 }
 
 #[derive(Deserialize, Serialize, Default)]

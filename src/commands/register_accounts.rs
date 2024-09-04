@@ -1,7 +1,17 @@
-use crate::{Context, Error};
+use std::collections::BTreeSet;
+
+use crate::{scraping::get_submission::Submission, Context, Error};
 use mysql::prelude::*;
 use mysql::*;
 use poise::serenity_prelude::{self as serenity, CreateEmbedAuthor};
+use serde::{Deserialize, Serialize};
+use serde_json;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[allow(non_snake_case)]
+pub struct UserSubmissionCount {
+    count: i32,
+}
 
 /// Register a specified AtCoder account without linking it to the Discord account.
 #[poise::command(prefix_command, slash_command, rename = "register-account")]
@@ -56,6 +66,50 @@ pub async fn register_account(ctx: Context<'_>, #[description = "atcoder_usernam
 
         ctx.send(response).await?;
     }
+
+    let user_submission: Vec<u64> = conn.exec(
+        r"SELECT epoch_second FROM submissions WHERE username=:username",
+        params! {"username" => &atcoder_user},
+    )?;
+    if user_submission.is_empty() {
+        let submission_count_url = format!(
+            "https://kenkoooo.com/atcoder/atcoder-api/v3/user/submission_count?user={}&from_second=0&to_second={}",
+            atcoder_user,
+            chrono::Utc::now().timestamp()
+        );
+        let submission_count_text = reqwest::get(submission_count_url).await?.text().await?;
+        let submission_count: UserSubmissionCount = serde_json::from_str(&submission_count_text)?;
+        let submissions_per_page = 500;
+        let mut last_epoch = 0;
+        let mut submission_set = BTreeSet::new();
+        for _ in 0..((submission_count.count / submissions_per_page) + 1) {
+            let submission_url = format!(
+                "https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user={}&from_second={}",
+                atcoder_user, last_epoch
+            );
+            let submission_text = reqwest::get(submission_url).await?.text().await?;
+            let submission_json: Vec<Submission> = serde_json::from_str(&submission_text)?;
+            for submission in submission_json {
+                submission_set.insert(submission.problem_id);
+                last_epoch = submission.epoch_second.max(last_epoch);
+            }
+            last_epoch += 1;
+        }
+        conn.exec_batch(
+            r"INSERT INTO submission_data (user_id, problem_id) VALUES (:user_id, :problem_id)",
+            submission_set.iter().map(|problem_id| {
+                params! {
+                    "user_id" => &atcoder_user,
+                    "problem_id" => problem_id,
+                }
+            }),
+        )?;
+        conn.exec_drop(
+            r"INSERT INTO submissions (username, epoch_second) VALUES (:username, :epoch_second)",
+            params! {"username" => &atcoder_user, "epoch_second" => last_epoch},
+        )?;
+    }
+
     Ok(())
 }
 
