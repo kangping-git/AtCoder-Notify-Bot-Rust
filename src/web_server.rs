@@ -15,6 +15,7 @@ use crate::{
     scraping::contest_type::ContestType,
     utils::svg::create_user_rating::{CreateUserRating, Theme},
 };
+use actix_web::web::Bytes;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[allow(non_snake_case)]
@@ -74,6 +75,15 @@ async fn home() -> impl Responder {
     };
     HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
 }
+#[get("/supporters/")]
+async fn supporters() -> impl Responder {
+    let file_content = if env::var("DEBUG").is_err() {
+        include_str!("../static/pages/src/supporters.html").to_string()
+    } else {
+        fs::read_to_string("static/pages/src/supporters.html").unwrap()
+    };
+    HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
+}
 #[get("/418/")]
 async fn im_a_teapot() -> impl Responder {
     let file_content = include_str!("../static/pages/src/418.html").to_string();
@@ -112,6 +122,14 @@ async fn icon() -> impl Responder {
     HttpResponse::Ok().content_type(ContentType(mime::IMAGE_SVG)).body(include_str!("../static/img/notify_icon.svg"))
 }
 
+#[get("/supporters/jikky1618.jpg")]
+async fn supporter_jikky() -> impl Responder {
+    HttpResponse::Ok().content_type(ContentType(mime::IMAGE_JPEG)).body(Bytes::from_static(include_bytes!("../static/img/jikky1618.jpg")))
+}
+#[get("/supporters/person.png")]
+async fn supporter_person() -> impl Responder {
+    HttpResponse::Ok().content_type(ContentType(mime::IMAGE_PNG)).body(Bytes::from_static(include_bytes!("../static/img/person.png")))
+}
 #[get("/notify_icon_white.svg")]
 async fn icon_white() -> impl Responder {
     HttpResponse::Ok().content_type(ContentType(mime::IMAGE_SVG)).body(include_str!("../static/img/notify_icon_white.svg"))
@@ -295,6 +313,9 @@ pub async fn start() {
             .service(icon_white)
             .service(rating_simulator)
             .service(im_a_teapot)
+            .service(supporters)
+            .service(supporter_jikky)
+            .service(supporter_person)
             .default_service(web::to(default_handler))
     })
     .bind(("127.0.0.1", port.parse::<u16>().unwrap()))
