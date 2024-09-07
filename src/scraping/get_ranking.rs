@@ -429,7 +429,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             color: match users.Rank {
                                 1 => "#FFD700",
                                 2 => "#C0C0C0",
-                                3 => "#",
+                                3 => "#CD7F32",
                                 _ => "white",
                             }
                             .to_string(),

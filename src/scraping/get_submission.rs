@@ -91,12 +91,16 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                 let url: String = format!(
                     "https://kenkoooo.com/atcoder/atcoder-api/v3/user/submissions?user={}&from_second={}",
                     i,
-                    submission_map.get(&i).unwrap()
+                    submission_map.get(&i).unwrap_or(&0)
                 );
 
                 println!("{}", url);
 
-                let response = client.get(url).send().await.unwrap();
+                let response = client.get(url).send().await;
+                if response.is_err() {
+                    continue;
+                }
+                let response = response.unwrap();
                 let text = response.text().await.unwrap_or_default();
                 let mut last: i64 = *submission_map.get(&i).unwrap();
                 let json: Vec<Submission> = serde_json::from_str(&text).unwrap();
@@ -120,7 +124,11 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                         let response_ja = {
                             let response = CreateMessage::default();
                             let embed = CreateEmbed::default()
-                                .title("[unique] AC Notify")
+                                .title(if submissions.contains(&j.problem_id) {
+                                    "AC Notify"
+                                } else {
+                                    "[unique] AC Notify"
+                                })
                                 .description(format!(
                                     "{}は、{}の{}をACしました! Diffは{}です",
                                     j.user_id, j.contest_id, j.problem_id, diff_text
@@ -131,7 +139,11 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                         let response_en = {
                             let response = CreateMessage::default();
                             let embed = CreateEmbed::default()
-                                .title("[unique] AC Notify")
+                                .title(if submissions.contains(&j.problem_id) {
+                                    "AC Notify"
+                                } else {
+                                    "[unique] AC Notify"
+                                })
                                 .description(format!("{} has solved {} in {}. Diff is {}", j.user_id, j.problem_id, j.contest_id, diff_text))
                                 .color(0x00FF00);
                             response.embed(embed)

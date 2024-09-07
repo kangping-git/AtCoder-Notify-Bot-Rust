@@ -1,3 +1,5 @@
+use log::LevelFilter;
+
 pub fn init_logger() {
     let base_config = fern::Dispatch::new();
 
@@ -12,17 +14,20 @@ pub fn init_logger() {
         })
     });
 
-    let application_config = fern::Dispatch::new().level(log::LevelFilter::Info).format(|out, message, record| {
-        out.finish(format_args! {
-            "[{}] {}:{} {} {}",
-            record.level(),
-            record.file().unwrap(),
-            record.line().unwrap(),
-            chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
-            message
+    let application_config = fern::Dispatch::new()
+        .level(LevelFilter::Off)
+        .level_for("atcoder_notify_bot", LevelFilter::Info)
+        .format(|out, message, record| {
+            out.finish(format_args! {
+                "[{}] {}:{} {} {}",
+                record.level(),
+                record.file().unwrap(),
+                record.line().unwrap(),
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+                message
+            })
         })
-    });
-    // .chain(std::io::stdout());
+        .chain(std::io::stdout());
     // .chain(fern::log_file("application.log").unwrap());
 
     let emergency_config = fern::Dispatch::new()
