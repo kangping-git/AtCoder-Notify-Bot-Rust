@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ABC/ARC/AGC Custom Rating</title>
+        <link href="/output.css" rel="stylesheet" />
+        <script>
+            const rating_colors = ["#808080", "#804000", "#008000", "#00C0C0", "#0000FF", "#C0C000", "#FF8000", "#FF0000"];
+            window.addEventListener("load", async () => {
+                let update = async () => {
+                    let user_data = {
+                        found: false,
+                    };
+                    if (input.value == "") {
+                        user_data = {
+                            found: false,
+                        };
+                    } else {
+                        user_data = await (await fetch("/api/atcoder/rating/" + input.value)).json();
+                    }
+                    if (!user_data.found) {
+                        username.style.color = "black";
+                        document.getElementById("now_algo_rating").innerText = "-";
+                        document.getElementById("now_heuristic_rating").innerText = "-";
+                        document.getElementById("now_algo_rating").style.color = "#000000";
+                        document.getElementById("now_heuristic_rating").style.color = "#000000";
+                        document.getElementById("abc_rating").innerText = "-";
+                        document.getElementById("arc_rating").innerText = "-";
+                        document.getElementById("agc_rating").innerText = "-";
+                        document.getElementById("ahc_rating").innerText = "-";
+                        document.getElementById("abc_rating").style.color = "#000000";
+                        document.getElementById("arc_rating").style.color = "#000000";
+                        document.getElementById("agc_rating").style.color = "#000000";
+                        document.getElementById("ahc_rating").style.color = "#000000";
+                    } else {
+                        username.style.color = rating_colors[Math.min(rating_colors.length - 1, Math.floor(user_data.algo_rating / 400))];
+                        let algo_rating = user_data.algo_rating;
+                        let heuristic_rating = user_data.heuristic_rating;
+                        let algo_rating_color = rating_colors[Math.min(rating_colors.length - 1, Math.floor(user_data.algo_rating / 400))];
+                        let heuristic_rating_color = rating_colors[Math.min(rating_colors.length - 1, Math.floor(user_data.heuristic_rating / 400))];
+                        if (user_data.algo_rated_num == 0) {
+                            algo_rating = "-";
+                            algo_rating_color = "#000000";
+                        }
+                        if (user_data.heuristic_rated_num == 0) {
+                            heuristic_rating = "-";
+                            heuristic_rating_color = "#000000";
+                        }
+                        document.getElementById("now_algo_rating").innerText = algo_rating;
+                        document.getElementById("now_heuristic_rating").innerText = heuristic_rating;
+                        document.getElementById("now_algo_rating").style.color = algo_rating_color;
+                        document.getElementById("now_heuristic_rating").style.color = heuristic_rating_color;
+                    }
+                    let history = await (await fetch("/api/atcoder/history/" + input.value)).json();
+                    if (user_data.found) {
+                        if (!history.found) {
+                            history.history = [];
+                        }
+                        let abc_history = history.history
+                            .filter((contest) => contest.contest_id.match(/^abc\d{3}\.contest\.atcoder\.jp$/))
+                            .map((value) => value.real_performance);
+                        let arc_history = history.history
+                            .filter((contest) => contest.contest_id.match(/^arc\d{3}\.contest\.atcoder\.jp$/))
+                            .map((value) => value.real_performance);
+                        let agc_history = history.history
+                            .filter((contest) => contest.contest_id.match(/^agc\d{3}\.contest\.atcoder\.jp$/))
+                            .map((value) => value.real_performance);
+
+                        abc_history.reverse();
+                        arc_history.reverse();
+                        agc_history.reverse();
+
+                        let abc_contests = abc_history.length;
+                        let abc_numerator = abc_history
+                            .map((performance, i) => {
+                                return Math.pow(2, performance / 800) * Math.pow(0.9, i + 1);
+                            })
+                            .reduce((a, b) => a + b, 0);
+                        let abc_denominator = Array.from({ length: abc_contests }, (_, i) => Math.pow(0.9, i + 1)).reduce((a, b) => a + b, 0);
+                        let abc_rating =
+                            800.0 * Math.log2(abc_numerator / abc_denominator) -
+                            ((Math.sqrt(1.0 - 0.81 ** abc_history.length) / (1.0 - 0.9 ** abc_history.length) - 1.0) / (Math.sqrt(19.0) - 1.0)) * 1200.0;
+                        if (abc_rating <= 400.0) {
+                            abc_rating = 400.0 / Math.exp((400.0 - abc_rating) / 400.0);
+                        }
+                        abc_rating = Math.round(abc_rating);
+                        let arc_contests = arc_history.length;
+                        let arc_numerator = arc_history
+                            .map((performance, i) => {
+                                return Math.pow(2, performance / 800) * Math.pow(0.9, i + 1);
+                            })
+                            .reduce((a, b) => a + b, 0);
+                        let arc_denominator = Array.from({ length: arc_contests }, (_, i) => Math.pow(0.9, i + 1)).reduce((a, b) => a + b, 0);
+                        let arc_rating =
+                            800.0 * Math.log2(abc_numerator / abc_denominator) -
+                            ((Math.sqrt(1.0 - 0.81 ** arc_history.length) / (1.0 - 0.9 ** arc_history.length) - 1.0) / (Math.sqrt(19.0) - 1.0)) * 1200.0;
+                        if (arc_rating <= 400.0) {
+                            arc_rating = 400.0 / Math.exp((400.0 - arc_rating) / 400.0);
+                        }
+                        arc_rating = Math.round(arc_rating);
+
+                        let agc_contests = agc_history.length;
+                        let agc_numerator = agc_history
+                            .map((performance, i) => {
+                                return Math.pow(2, performance / 800) * Math.pow(0.9, i + 1);
+                            })
+                            .reduce((a, b) => a + b, 0);
+                        let agc_denominator = Array.from({ length: agc_contests }, (_, i) => Math.pow(0.9, i + 1)).reduce((a, b) => a + b, 0);
+                        let agc_rating =
+                            800.0 * Math.log2(agc_numerator / agc_denominator) -
+                            ((Math.sqrt(1.0 - 0.81 ** agc_history.length) / (1.0 - 0.9 ** agc_history.length) - 1.0) / (Math.sqrt(19.0) - 1.0)) * 1200.0;
+                        if (agc_rating <= 400.0) {
+                            agc_rating = 400.0 / Math.exp((400.0 - agc_rating) / 400.0);
+                        }
+                        agc_rating = Math.round(agc_rating);
+
+                        let ahc_rating = user_data.heuristic_rating;
+
+                        let abc_color = rating_colors[Math.min(rating_colors.length - 1, Math.floor(abc_rating / 400))];
+                        let arc_color = rating_colors[Math.min(rating_colors.length - 1, Math.floor(arc_rating / 400))];
+                        let agc_color = rating_colors[Math.min(rating_colors.length - 1, Math.floor(agc_rating / 400))];
+                        let ahc_color = rating_colors[Math.min(rating_colors.length - 1, Math.floor(ahc_rating / 400))];
+                        let x_text = "ABC/ARC/AGC レーティング結果\n";
+                        if (isNaN(abc_rating)) {
+                            abc_rating = "-";
+                            abc_color = "#000000";
+                        } else {
+                            x_text += "ABC: " + abc_rating + "\n";
+                        }
+                        if (isNaN(arc_rating)) {
+                            arc_rating = "-";
+                            arc_color = "#000000";
+                        } else {
+                            x_text += "ARC: " + arc_rating + "\n";
+                        }
+                        if (isNaN(agc_rating)) {
+                            agc_rating = "-";
+                            agc_color = "#000000";
+                        } else {
+                            x_text += "AGC: " + agc_rating + "\n";
+                        }
+                        if (user_data.heuristic_rated_num == 0) {
+                            ahc_rating = "-";
+                            ahc_color = "#000000";
+                        } else {
+                            x_text += "AHC: " + ahc_rating + "\n";
+                        }
+                        x_text += "でした！";
+                        document.getElementById("share_x").href =
+                            "http://twitter.com/share?url=atcoder-notify.com%2Frating_other_contests%2F&text=" + encodeURIComponent(x_text);
+
+                        document.getElementById("abc_rating").innerText = abc_rating;
+                        document.getElementById("arc_rating").innerText = arc_rating;
+                        document.getElementById("agc_rating").innerText = agc_rating;
+                        document.getElementById("ahc_rating").innerText = ahc_rating;
+                        document.getElementById("abc_rating").style.color = abc_color;
+                        document.getElementById("arc_rating").style.color = arc_color;
+                        document.getElementById("agc_rating").style.color = agc_color;
+                        document.getElementById("ahc_rating").style.color = ahc_color;
+                    }
+                };
+
+                let input = document.getElementById("username");
+                let timeout = null;
+                input.addEventListener("input", () => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(update, 200);
+                });
+            });
+        </script>
+    </head>
+    <body class="bg-gradient-to-tr from-green-500 to-cyan-400 h-screen content-center font-sans">
+        <div class="bg-white rounded-xl w-4/5 min-h-[80vh] mx-auto p-7 pb-28 text-center relative">
+            <h1 class="text-3xl m-5">ABC/ARC/AGC Custom Rating</h1>
+            <input
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                id="username"
+                type="text"
+                placeholder="Username"
+            />
+            <div class="flex justify-between mt-4">
+                <div>
+                    Now Algo Rating:
+                    <span id="now_algo_rating" class="inline-block w-12">-</span>
+                </div>
+                <div>
+                    Now Heuristic Rating:
+                    <span id="now_heuristic_rating" class="inline-block w-12">-</span>
+                </div>
+            </div>
+            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="mx-auto w-full text-sm text-left rtl:text-right text-gray-800">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Rating Type</th>
+                            <th scope="col" class="px-6 py-3">Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">ABC</th>
+                            <td class="px-6 py-4" id="abc_rating">-</td>
+                        </tr>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">ARC</th>
+                            <td class="px-6 py-4" id="arc_rating">-</td>
+                        </tr>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">AGC</th>
+                            <td class="px-6 py-4" id="agc_rating">-</td>
+                        </tr>
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">AHC</th>
+                            <td class="px-6 py-4" id="ahc_rating">-</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="absolute bottom-5 right-5">
+                <a
+                    href="http://twitter.com/share?url=atcoder-notify.com%2Frating_other_contests%2F&text=ABC%2FARC%2FAGC レーティング結果"
+                    target="_blank"
+                    rel="nofollow noopener noreferrer"
+                    class="bg-black text-white px-4 py-2 rounded-md"
+                    id="share_x"
+                    >Xで共有</a
+                >
+            </div>
+            <div class="absolute bottom-5 text-center left-1/3 -translate-x-1/2 border-t-2 text-xs sm:left-1/2 sm:text-sm">
+                made by <a href="/">atcoder-notify.com</a><br />data from <a href="https://atcoder.jp">atcoder.jp</a>
+            </div>
+        </div>
+    </body>
+</html>

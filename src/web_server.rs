@@ -34,6 +34,7 @@ pub struct UserHistoryElement {
     contest_id: String,
     rating: i32,
     performance: i32,
+    real_performance: i32,
     start_time: String,
     duration: i32,
 }
@@ -104,6 +105,15 @@ async fn rating_simulator() -> impl Responder {
         include_str!("../static/pages/src/rating_simulator.html").to_string()
     } else {
         fs::read_to_string("static/pages/src/rating_simulator.html").unwrap()
+    };
+    HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
+}
+#[get("/rating_other_contests/")]
+async fn rating_other_contests() -> impl Responder {
+    let file_content = if env::var("DEBUG").is_err() {
+        include_str!("../static/pages/src/rating_other_contests.html").to_string()
+    } else {
+        fs::read_to_string("static/pages/src/rating_other_contests.html").unwrap()
     };
     HttpResponse::Ok().content_type(ContentType::html()).body(file_content)
 }
@@ -219,10 +229,10 @@ async fn get_history(pool: web::Data<Pool>, id: web::Path<String>, query: web::Q
     let contest_type_str = query.get("contest_type").unwrap_or(&algo);
     let contest_type: i32 = if contest_type_str == "heuristic" { 1 } else { 0 };
     let mut conn = pool.get_conn().unwrap();
-    let atcoder_rating: Vec<(String, i32, i32, String, i32)> = conn
+    let atcoder_rating: Vec<(String, i32, i32, i32, String, i32)> = conn
         .exec(
             "SELECT
-            user_ratings.contest, user_ratings.performance, user_ratings.rating,
+            user_ratings.contest, user_ratings.performance, LEAST(user_ratings.performance,contests.rating_range_end+401), user_ratings.rating,
             contests.start_time,
             contests.duration
         FROM
@@ -240,10 +250,11 @@ async fn get_history(pool: web::Data<Pool>, id: web::Path<String>, query: web::Q
         for i in atcoder_rating {
             history.push(UserHistoryElement {
                 contest_id: i.0,
-                rating: i.2,
+                rating: i.3,
+                real_performance: i.2,
                 performance: i.1,
-                start_time: i.3,
-                duration: i.4,
+                start_time: i.4,
+                duration: i.5,
             })
         }
         let history_data = UserHistory {
@@ -316,6 +327,7 @@ pub async fn start() {
             .service(supporters)
             .service(supporter_jikky)
             .service(supporter_person)
+            .service(rating_other_contests)
             .default_service(web::to(default_handler))
     })
     .bind(("127.0.0.1", port.parse::<u16>().unwrap()))
