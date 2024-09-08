@@ -221,7 +221,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             title: task.Assignment.clone(),
                             color_theme: Theme::Dark,
                             rating: difficulty as i32,
-                            has_bronze: false,
+                            has_bronze: true,
                         }),
                         width: 200,
                         align: Align::Middle,
@@ -312,7 +312,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                                 },
                             )
                             .unwrap();
-                        performance_list.push(perf as i32);
+                        performance_list.push(perf.round() as i32);
 
                         let mut rate = if i.contest_type == 0 {
                             performance_list.reverse();
@@ -329,9 +329,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             let denominator: f64 = (1..=rated_contests).map(|i| 0.9_f64.powi(i)).sum();
 
                             800.0 * (numerator / denominator).log2()
-                                - ((f64::sqrt(1.0 - 0.81_f64.powi((performance_list.len()) as i32)) / (1.0 - 0.9_f64.powi((performance_list.len()) as i32)))
-                                    - 1.0)
-                                    / (f64::sqrt(19.0) - 1.0)
+                                - ((f64::sqrt(1.0 - 0.81_f64.powi(rated_contests)) / (1.0 - 0.9_f64.powi(rated_contests))) - 1.0) / (f64::sqrt(19.0) - 1.0)
                                     * 1200.0
                         } else {
                             let mut qs = vec![];
@@ -355,6 +353,8 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             rate = 400.0 / (f64::exp((400.0 - rate) / 400.0))
                         }
 
+                        let rate = rate.round();
+
                         new_rate_list.push(RatingType::Custom(RatingCustom {
                             rating: rate as i32,
                             title: (rate as i32).to_string(),
@@ -362,19 +362,19 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             color_theme: Theme::Dark,
                         }));
                         old_rate_list.push(RatingType::Custom(RatingCustom {
-                            rating: users.Rating,
-                            title: users.Rating.to_string(),
+                            rating: users.OldRating,
+                            title: users.OldRating.to_string(),
                             has_bronze: false,
                             color_theme: Theme::Dark,
                         }));
 
                         rate_diff_list.push(TextConfig {
-                            value: if rate as i32 - users.Rating > 0 {
-                                format!("+{}", rate as i32 - users.Rating)
+                            value: if rate as i32 - users.OldRating > 0 {
+                                format!("+{}", rate as i32 - users.OldRating)
                             } else {
-                                (rate as i32 - users.Rating).to_string()
+                                (rate as i32 - users.OldRating).to_string()
                             },
-                            color: match rate as i32 - users.Rating {
+                            color: match rate as i32 - users.OldRating {
                                 x if x > 0 => "red",
                                 x if x < 0 => "Aquamarine",
                                 _ => "white",

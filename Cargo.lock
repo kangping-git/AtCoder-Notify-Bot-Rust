@@ -384,6 +384,7 @@ dependencies = [
  "nutype",
  "plotters",
  "poise",
+ "regex",
  "reqwest 0.12.7",
  "resvg",
  "scraper",

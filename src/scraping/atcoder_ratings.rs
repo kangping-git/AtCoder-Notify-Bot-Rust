@@ -4,7 +4,7 @@ use fontdue::layout::{CoordinateSystem, Layout, TextStyle};
 use fontdue::Font;
 use mysql::prelude::*;
 use mysql::*;
-use poise::serenity_prelude::{CacheHttp, ChannelId, Context, CreateAttachment, CreateMessage};
+use poise::serenity_prelude::{CacheHttp, ChannelId, Context, CreateAttachment, CreateMessage, UserId};
 use reqwest::blocking::Client;
 use reqwest::cookie::Jar;
 use serde::{Deserialize, Serialize};
@@ -21,6 +21,7 @@ use crate::utils::svg::create_user_rating::Theme;
 use crate::utils::svg_to_png::svg_to_png;
 
 use super::get_user_list;
+use super::ranking_types::StandingsJson;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[allow(non_snake_case)]
@@ -163,7 +164,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                     let mut is_delete = false;
                     let new_rating = i.NewRating;
                     let mut performance = i.Performance;
-                    if i.Performance >= rating_range_end + 401 {
+                    if i.Performance >= rating_range_end + 4020 {
                         let mut rating_history = vec![];
                         let has_cache;
                         if *contest_type == 0 {
@@ -223,6 +224,43 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
         }
     }
     if !contests_list.is_empty() && !get_all {
+        let attachment = CreateAttachment::bytes(include_bytes!("../../static/img/cyan_rating_its_D_problem.png"), "img.png");
+        let contest = &contests_list[0];
+        let abc_regex = regex::Regex::new(r"^abc\d{3}\.contest\.atcoder\.jp$").unwrap();
+        if abc_regex.is_match(contest) {
+            let url = format!("https://{}/standings/json", contest);
+            let json = client.get(url).send().unwrap().text().unwrap_or_default();
+            let data: StandingsJson = serde_json::from_str(&json).unwrap_or_default();
+            let users: Vec<(u64, String)> = conn.query("SELECT discord_id,atcoder_username from users WHERE discord_id is not null").unwrap();
+            let mut discord_id_to_atcoder = BTreeMap::new();
+            for (discord_id, atcoder_username) in users {
+                discord_id_to_atcoder.insert(discord_id, atcoder_username);
+            }
+            let mut d_problem = "";
+            for problem in &data.TaskInfo {
+                if problem.Assignment.to_lowercase() == "d" {
+                    d_problem = &problem.TaskScreenName;
+                }
+            }
+            let mut un_solve_d_problem_cyan = BTreeSet::new();
+            for result in &data.StandingsData {
+                if 1200 <= result.OldRating
+                    && result.OldRating < 1600
+                    && (!result.TaskResults.contains_key(d_problem) || result.TaskResults.get(d_problem).unwrap().Score == 0)
+                    && result.IsRated
+                {
+                    un_solve_d_problem_cyan.insert(result.UserScreenName.to_lowercase());
+                }
+            }
+
+            for (discord_id, atcoder_username) in discord_id_to_atcoder {
+                if un_solve_d_problem_cyan.contains(&atcoder_username.to_lowercase()) {
+                    let user = UserId::new(discord_id);
+                    user.dm(ctx.http(), CreateMessage::new().add_file(attachment.clone())).await.unwrap_or_default();
+                }
+            }
+        }
+
         let mut db = Database::new();
         db.load_system_fonts();
 
@@ -278,7 +316,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
             for (i, result_data) in user_data.iter().enumerate() {
                 all_rank_vec.push(TextConfig {
                     value: ordinal_suffix(result_data.Place),
-                    color: match server_rank {
+                    color: match result_data.Place {
                         1 => "#FFD700",
                         2 => "#C0C0C0",
                         3 => "#CD7F32",
@@ -288,7 +326,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                 });
                 server_rank_vec.push(TextConfig {
                     value: ordinal_suffix(server_ranks[i]),
-                    color: match server_rank {
+                    color: match server_ranks[i] {
                         1 => "#FFD700",
                         2 => "#C0C0C0",
                         3 => "#CD7F32",
@@ -397,7 +435,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
 
             let svg = create_table::create_table(
                 &Arc::new(Mutex::new(pool.clone())),
-                format!("レーティング更新:{}", user_data[0].ContestName),
+                format!("レーティング更新:{}", user_data[0].ContestNameEn),
                 rows,
             )
             .await;
