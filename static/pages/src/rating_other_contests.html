@@ -93,7 +93,7 @@
                             .reduce((a, b) => a + b, 0);
                         let arc_denominator = Array.from({ length: arc_contests }, (_, i) => Math.pow(0.9, i + 1)).reduce((a, b) => a + b, 0);
                         let arc_rating =
-                            800.0 * Math.log2(abc_numerator / abc_denominator) -
+                            800.0 * Math.log2(arc_numerator / arc_denominator) -
                             ((Math.sqrt(1.0 - 0.81 ** arc_history.length) / (1.0 - 0.9 ** arc_history.length) - 1.0) / (Math.sqrt(19.0) - 1.0)) * 1200.0;
                         if (arc_rating <= 400.0) {
                             arc_rating = 400.0 / Math.exp((400.0 - arc_rating) / 400.0);
