@@ -164,7 +164,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                     let mut is_delete = false;
                     let new_rating = i.NewRating;
                     let mut performance = i.Performance;
-                    if i.Performance >= rating_range_end + 4020 {
+                    if i.Performance >= rating_range_end + 401 {
                         let mut rating_history = vec![];
                         let has_cache;
                         if *contest_type == 0 {
