@@ -483,7 +483,8 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
 
     transaction.commit().unwrap();
     if !contests_list.is_empty() {
-        get_user_list::user_list_update(conn_raw, ctx).await.unwrap_or_default();
+        let conn = Arc::new(Mutex::new(pool.clone()));
+        get_user_list::user_list_update(&conn, ctx).await.unwrap_or_default();
     }
     Ok(())
 }
