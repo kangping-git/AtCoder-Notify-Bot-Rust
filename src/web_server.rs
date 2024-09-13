@@ -241,7 +241,7 @@ async fn get_history(pool: web::Data<Pool>, id: web::Path<String>, query: web::Q
             contests
         ON
             contests.contest_id = user_ratings.contest
-        WHERE user_ratings.user_name=:atcoder_id and user_ratings.type=:contest_type",
+        WHERE user_ratings.user_name=:atcoder_id and user_ratings.type=:contest_type ORDER BY contests.start_time",
             params! {"atcoder_id" => id.to_string(), "contest_type" => contest_type},
         )
         .unwrap();
