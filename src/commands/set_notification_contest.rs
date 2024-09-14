@@ -4,7 +4,7 @@ use mysql::prelude::*;
 use mysql::*;
 
 use poise::{
-    serenity_prelude::{self as serenity, json::NULL, CreateEmbed, CreateEmbedAuthor},
+    serenity_prelude::{self as serenity, CreateEmbed, CreateEmbedAuthor},
     CreateReply,
 };
 
@@ -102,15 +102,10 @@ pub async fn unset_notification_contest(ctx: Context<'_>) -> Result<(), Error> {
         lang = selected_data[0].as_str();
     }
 
-    if count[0] == 0 {
+    if count[0] != 0 {
         conn.exec_drop(
-            r"INSERT INTO notifications (server_id, contest_channel_id) VALUES (:server_id, :channel)",
-            params! {"server_id" => &guild_id, "channel" => NULL},
-        )?;
-    } else {
-        conn.exec_drop(
-            r"UPDATE notifications SET contest_channel_id=:channel WHERE server_id=:server_id",
-            params! {"server_id" => &guild_id, "channel" => NULL},
+            r"UPDATE notifications SET contest_channel_id=:channel WHERE server_id=NULL",
+            params! {"server_id" => &guild_id},
         )?;
     }
 

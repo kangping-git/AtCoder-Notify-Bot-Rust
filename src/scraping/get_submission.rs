@@ -38,6 +38,7 @@ struct Diff {
 
 pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
     let pool = pool.lock().await;
+    log::info!("test");
     let mut conn = pool.get_conn().unwrap();
     loop {
         let client = Client::builder().gzip(true).build().unwrap();
@@ -94,7 +95,7 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                     submission_map.get(&i).unwrap_or(&0)
                 );
 
-                println!("{}", url);
+                log::info!("{}", url);
 
                 let response = client.get(url).send().await;
                 if response.is_err() {
