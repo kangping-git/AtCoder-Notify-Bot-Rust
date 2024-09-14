@@ -54,7 +54,7 @@ async fn interval(ctx: serenity::Context) {
     log::info!("interval");
     let cookie_store = Arc::new(Jar::default());
     let mut last_minute = 100;
-    let mut date = chrono::NaiveDate::from_ymd_opt(2000, 1, 1).unwrap();
+    let mut date = chrono::Local::now().date_naive();
     let url = format!(
         "mysql://{}:{}@{}:{}/{}",
         std::env::var("MYSQL_USER").expect(""),
@@ -70,6 +70,11 @@ async fn interval(ctx: serenity::Context) {
     tokio::spawn(async move {
         get_submission(&pool_clone, &ctx_clone).await;
     });
+    login::login(
+        std::env::var("ATCODER_USER").expect(""),
+        std::env::var("ATCODER_PASS").expect(""),
+        &cookie_store,
+    );
     let mut activity_text_type = 0;
     let mut count = 0;
     loop {

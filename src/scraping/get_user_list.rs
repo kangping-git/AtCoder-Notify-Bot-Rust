@@ -12,7 +12,19 @@ pub async fn user_list_update(conn: &Arc<Mutex<Pool>>, ctx: &Context) -> Result<
     let pool = conn.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let start_time = Instant::now();
-    let list: Vec<(i32, i32, i32, String, String, i8)> = conn.query("select * from user_ratings").unwrap();
+    let list: Vec<(i32, i32, i32, String, String, i8)> = conn
+        .query(
+            "SELECT
+            user_ratings.*
+        FROM
+            user_ratings
+        JOIN
+            contests
+        ON
+            contests.contest_id = user_ratings.contest
+         ORDER BY contests.start_time",
+        )
+        .unwrap();
     log::info!("get all of db {:?}", start_time.elapsed());
     let mut user_algo_history: BTreeMap<String, Vec<(i32, i32, String)>> = BTreeMap::new();
     let mut user_heuristic_history: BTreeMap<String, Vec<(i32, i32, String)>> = BTreeMap::new();
