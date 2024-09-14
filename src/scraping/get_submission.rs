@@ -103,7 +103,13 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                 }
                 let response = response.unwrap();
                 let text = response.text().await.unwrap_or_default();
-                let mut last: i64 = *submission_map.get(&i).unwrap();
+                let last_option = submission_map.get(&i);
+                let mut last;
+                if last_option.is_some() {
+                    last = *last_option.unwrap();
+                } else {
+                    continue;
+                }
                 let json: Vec<Submission> = serde_json::from_str(&text).unwrap();
                 for j in json {
                     if j.result == "AC" {
