@@ -38,7 +38,8 @@ pub async fn notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) -> Result<
         })
         .collect();
     if !contests.is_empty() {
-        let channels: Vec<(String, String)> = conn.query("SELECT server_id,contest_channel_id FROM notifications").unwrap();
+        let channels: Vec<(String, String)> =
+            conn.query("SELECT server_id,contest_channel_id FROM notifications WHERE contest_channel_id is not null").unwrap();
         let (response_ja, response_en) = {
             let mut embed_vec_ja = vec![];
             let mut embed_vec_en = vec![];

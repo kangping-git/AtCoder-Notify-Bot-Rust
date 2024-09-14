@@ -138,7 +138,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
         contest_users_map.insert(user.server_id.to_string(), vec);
     }
 
-    let channels: Vec<(String, String)> = conn.query("SELECT contest_channel_id,server_id FROM notifications").unwrap();
+    let channels: Vec<(String, String)> = conn.query("SELECT contest_channel_id,server_id FROM notifications where contest_channel_id is not null").unwrap();
 
     let users: Vec<(String, f64, f64, i32, i32)> =
         conn.query("SELECT user_name,algo_aperf,heuristic_aperf,algo_contests,heuristic_contests FROM atcoder_user_ratings").unwrap();
@@ -362,21 +362,21 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             color_theme: Theme::Dark,
                         }));
                         old_rate_list.push(RatingType::Custom(RatingCustom {
-                            rating: users.OldRating,
-                            title: users.OldRating.to_string(),
+                            rating: users.Rating,
+                            title: users.Rating.to_string(),
                             has_bronze: false,
                             color_theme: Theme::Dark,
                         }));
 
                         rate_diff_list.push(TextConfig {
-                            value: if rate as i32 - users.OldRating > 0 {
-                                format!("+{}", rate as i32 - users.OldRating)
+                            value: if rate as i32 - users.Rating > 0 {
+                                format!("+{}", rate as i32 - users.Rating)
                             } else {
-                                (rate as i32 - users.OldRating).to_string()
+                                (rate as i32 - users.Rating).to_string()
                             },
-                            color: match rate as i32 - users.OldRating {
-                                x if x > 0 => "red",
-                                x if x < 0 => "Aquamarine",
+                            color: match rate as i32 - users.Rating {
+                                x if x > 0 => "Aquamarine",
+                                x if x < 0 => "red",
                                 _ => "white",
                             }
                             .to_string(),

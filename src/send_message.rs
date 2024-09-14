@@ -59,7 +59,7 @@ pub async fn send_notify(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) -> Re
             }
             message.content("今日のコンテストです").add_embeds(embed_vec)
         };
-        let channels: Vec<String> = conn.query("SELECT contest_channel_id FROM notifications").unwrap();
+        let channels: Vec<String> = conn.query("SELECT contest_channel_id FROM notifications WHERE contest_channel_id is not null").unwrap();
         for i in channels {
             log::info!("{}", i);
             if i != "null" {

@@ -138,7 +138,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
 
     let mut rating_data: BTreeMap<String, ResultData> = BTreeMap::new();
 
-    let channels: Vec<(String, String)> = conn.query("SELECT contest_channel_id,server_id FROM notifications").unwrap();
+    let channels: Vec<(String, String)> = conn.query("SELECT contest_channel_id,server_id FROM notifications WHERE contest_channel_id is not null").unwrap();
 
     let mut contests_list: Vec<String> = vec![];
     let mut is_first = true;
@@ -369,8 +369,8 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                         (result_data.NewRating - result_data.OldRating).to_string()
                     },
                     color: match result_data.NewRating - result_data.OldRating {
-                        x if x > 0 => "red",
-                        x if x < 0 => "Aquamarine",
+                        x if x > 0 => "Aquamarine",
+                        x if x < 0 => "red",
                         _ => "white",
                     }
                     .to_string(),
