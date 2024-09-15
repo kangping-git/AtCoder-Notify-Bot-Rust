@@ -165,8 +165,13 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                                 .color(color);
                             response.embed(embed)
                         };
+                        let mut channel_ids = BTreeSet::new();
                         for k in users_map.get(&i).unwrap() {
+                            if channel_ids.contains(&k.0) {
+                                continue;
+                            }
                             let channel = ChannelId::new(k.0);
+                            channel_ids.insert(k.0);
                             let selected_data: Vec<(String, i32)> = conn
                                 .exec(
                                     r"SELECT language, ac_notify FROM server_settings WHERE server_id=:server_id",
