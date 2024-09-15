@@ -36,6 +36,8 @@ struct Diff {
     is_experimental: Option<bool>,
 }
 
+const RATING_COLORS: [u32; 9] = [0x404040, 0x808080, 0x804000, 0x008000, 0x00c0c0, 0x0000ff, 0xc0c000, 0xff8000, 0xff0000];
+
 pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
     let pool = pool.lock().await;
     log::info!("test");
@@ -110,21 +112,29 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                 } else {
                     continue;
                 }
-                let json: Vec<Submission> = serde_json::from_str(&text).unwrap();
+                let json = serde_json::from_str(&text);
+                if json.is_err() {
+                    continue;
+                }
+                let json: Vec<Submission> = json.unwrap();
+
                 for j in json {
                     if j.result == "AC" {
-                        let mut diff_text = "null".to_string();
+                        let mut diff_text = "0".to_string();
                         let diff = diff.get(&j.problem_id);
+                        let mut color = RATING_COLORS[0];
                         if let Some(diff) = diff {
                             diff_text = match diff.difficulty {
-                                Some(diff) => {
+                                Some(mut diff) => {
                                     if diff <= 400 {
-                                        ((400.0 / (f64::exp((400.0 - diff as f64) / 400.0))) as i32).to_string()
-                                    } else {
-                                        diff.to_string()
+                                        diff = (400.0 / (f64::exp((400.0 - diff as f64) / 400.0))) as i32
                                     }
+
+                                    color = RATING_COLORS[((diff / 400 + 1) as usize).min(RATING_COLORS.len() - 1)];
+
+                                    diff.to_string()
                                 }
-                                None => "null".to_string(),
+                                None => "0".to_string(),
                             };
                         }
                         last = std::cmp::max(last, j.epoch_second + 1);
@@ -140,7 +150,7 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                                     "{}は、{}の{}をACしました! Diffは{}です",
                                     j.user_id, j.contest_id, j.problem_id, diff_text
                                 ))
-                                .color(0x00FF00);
+                                .color(color);
                             response.embed(embed)
                         };
                         let response_en = {
@@ -152,7 +162,7 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                                     "[unique] AC Notify"
                                 })
                                 .description(format!("{} has solved {} in {}. Diff is {}", j.user_id, j.problem_id, j.contest_id, diff_text))
-                                .color(0x00FF00);
+                                .color(color);
                             response.embed(embed)
                         };
                         for k in users_map.get(&i).unwrap() {

@@ -90,7 +90,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
     let pool = conn_raw.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let contests: Vec<(String, i8, i32, bool, String, i32)> = conn
-        .query(r"select contest_id,contest_type,rating_range_end,get_user_ratings_flag,start_time,duration from contests where rating_range_end>=0")
+        .query(r"select contest_id,contest_type,rating_range_end,get_user_ratings_flag,start_time,duration from contests where rating_range_end>=0 ORDER BY start_time")
         .unwrap();
     let mut contests: Vec<&(String, i8, i32, bool, String, i32)> = contests
         .iter()
@@ -433,23 +433,25 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                 }),
             ];
 
-            let svg = create_table::create_table(
-                &Arc::new(Mutex::new(pool.clone())),
-                format!("レーティング更新:{}", user_data[0].ContestNameEn),
-                rows,
-            )
-            .await;
-            let response = {
-                let mut message = CreateMessage::new();
-                message = message.content("レーティングが更新されました").add_file(CreateAttachment::bytes(
-                    svg_to_png(svg.svg.as_str(), svg.width as u32, svg.height as u32, 1.0, 1.0),
-                    "ranking.png",
-                ));
-                message
-            };
+            if !user_data.is_empty() {
+                let svg = create_table::create_table(
+                    &Arc::new(Mutex::new(pool.clone())),
+                    format!("レーティング更新:{}", user_data[0].ContestNameEn),
+                    rows,
+                )
+                .await;
+                let response = {
+                    let mut message = CreateMessage::new();
+                    message = message.content("レーティングが更新されました").add_file(CreateAttachment::bytes(
+                        svg_to_png(svg.svg.as_str(), svg.width as u32, svg.height as u32, 1.0, 1.0),
+                        "ranking.png",
+                    ));
+                    message
+                };
 
-            let channel = ChannelId::new(i.0.parse::<u64>().unwrap());
-            channel.send_message(ctx.http(), response).await.unwrap_or_default();
+                let channel = ChannelId::new(i.0.parse::<u64>().unwrap());
+                channel.send_message(ctx.http(), response).await.unwrap_or_default();
+            }
         }
     }
 
