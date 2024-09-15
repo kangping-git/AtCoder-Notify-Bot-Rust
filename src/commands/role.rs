@@ -8,15 +8,15 @@ use mysql::prelude::*;
 use mysql::*;
 
 const ROLE_COLORS_AND_NAMES: [(&str, (u8, u8, u8)); 9] = [
-    ("Black", (64, 64, 64)),
-    ("Gray", (128, 128, 128)),
-    ("Brown", (128, 64, 0)),
-    ("Green", (0, 128, 0)),
-    ("Cyan", (0, 192, 192)),
-    ("Blue", (0, 0, 255)),
-    ("Yellow", (192, 192, 0)),
-    ("Orange", (255, 128, 0)),
-    ("Red", (255, 0, 0)),
+    ("Black", (255, 255, 255)),
+    ("Gray", (192, 192, 192)),
+    ("Brown", (176, 140, 86)),
+    ("Green", (63, 175, 63)),
+    ("Cyan", (66, 224, 224)),
+    ("Blue", (136, 136, 255)),
+    ("Yellow", (255, 255, 86)),
+    ("Orange", (255, 184, 54)),
+    ("Red", (255, 103, 103)),
 ];
 
 #[poise::command(prefix_command, slash_command, subcommands("create_roles"))]

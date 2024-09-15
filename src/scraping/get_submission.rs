@@ -36,7 +36,7 @@ struct Diff {
     is_experimental: Option<bool>,
 }
 
-const RATING_COLORS: [u32; 9] = [0x404040, 0x808080, 0x804000, 0x008000, 0x00c0c0, 0x0000ff, 0xc0c000, 0xff8000, 0xff0000];
+const RATING_COLORS: [u32; 9] = [0xFFFFFF, 0xC0C0C0, 0xB08C56, 0x3FAF3F, 0x42E0E0, 0x8888FF, 0xFFFF56, 0xFFB836, 0xFF6767];
 
 pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
     let pool = pool.lock().await;
