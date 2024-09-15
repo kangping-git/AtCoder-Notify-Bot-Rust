@@ -1,5 +1,5 @@
 use poise::{
-    serenity_prelude::{Colour, CreateEmbed, EditRole, UserId},
+    serenity_prelude::{Colour, CreateEmbed, EditRole, RoleId, UserId},
     CreateReply,
 };
 
@@ -19,7 +19,7 @@ const ROLE_COLORS_AND_NAMES: [(&str, (u8, u8, u8)); 9] = [
     ("Red", (255, 103, 103)),
 ];
 
-#[poise::command(prefix_command, slash_command, subcommands("create_roles"))]
+#[poise::command(prefix_command, slash_command, subcommands("create_roles", "delete_roles"))]
 pub async fn role(_ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -127,6 +127,80 @@ pub async fn create_roles(ctx: Context<'_>) -> Result<(), Error> {
         ctx.send(response).await?;
     } else {
         let response = CreateReply::default().embed(CreateEmbed::new().title("Success").description("Role creation successful.")).ephemeral(true);
+        ctx.send(response).await?;
+    }
+
+    Ok(())
+}
+
+#[poise::command(prefix_command, slash_command)]
+pub async fn delete_roles(ctx: Context<'_>) -> Result<(), Error> {
+    let pool = ctx.data().conn.lock().await;
+    let mut conn = pool.get_conn().unwrap();
+    let guild_id = ctx.guild_id().unwrap().get();
+
+    let selected_data: Vec<String> = conn.exec(
+        r"SELECT language FROM server_settings WHERE server_id=:server_id",
+        params! {"server_id" => guild_id},
+    )?;
+    let mut lang = "ja";
+    if selected_data.len() == 1 {
+        lang = selected_data[0].as_str();
+    }
+
+    let owners: Vec<u64> = conn
+        .exec(
+            "SELECT user_id FROM owners WHERE guild_id=:guild_id",
+            params! {
+                "guild_id" => ctx.guild_id().unwrap_or_default().get()
+            },
+        )
+        .unwrap();
+    let has_permission = if owners.is_empty() || owners.contains(&{ ctx.author().id.get() }) {
+        true
+    } else {
+        ctx.author().id.get() == ctx.guild().unwrap().owner_id.get()
+    };
+    if !has_permission {
+        if lang == "ja" {
+            let response = CreateReply::default().embed(CreateEmbed::default().title("エラー").description("権限がありません。")).ephemeral(true);
+            ctx.send(response).await?;
+        } else {
+            let response = CreateReply::default().embed(CreateEmbed::default().title("Error").description("You do not have permission.")).ephemeral(true);
+            ctx.send(response).await?;
+        }
+        return Ok(());
+    }
+
+    ctx.defer_ephemeral().await?;
+
+    let has_roles: Vec<u64> = conn.exec(r"SELECT role_id FROM roles WHERE guild_id=:guild_id", params! {"guild_id" => guild_id})?;
+    if has_roles.is_empty() {
+        if lang == "ja" {
+            let response = CreateReply::default().embed(CreateEmbed::new().title("エラー").description("ロールが作成されていません")).ephemeral(true);
+            ctx.send(response).await?;
+        } else {
+            let response = CreateReply::default().embed(CreateEmbed::new().title("Error").description("Roles have not been created.")).ephemeral(true);
+            ctx.send(response).await?;
+        }
+        return Ok(());
+    }
+
+    let mut transaction = conn.start_transaction(TxOpts::default()).unwrap();
+
+    for i in has_roles {
+        ctx.guild_id().unwrap().delete_role(ctx.http(), RoleId::new(i)).await.unwrap_or_default();
+    }
+
+    transaction.exec_drop("DELETE FROM roles WHERE guild_id=:guild_id", params! {"guild_id" => guild_id})?;
+
+    transaction.commit().unwrap();
+
+    if lang == "ja" {
+        let response = CreateReply::default().embed(CreateEmbed::new().title("成功").description("ロールの削除に成功しました。")).ephemeral(true);
+        ctx.send(response).await?;
+    } else {
+        let response = CreateReply::default().embed(CreateEmbed::new().title("Success").description("Role deletion successful.")).ephemeral(true);
         ctx.send(response).await?;
     }
 
