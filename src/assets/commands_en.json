@@ -160,5 +160,11 @@
         "usage": "/server set-ac-notify {all|unique}",
         "description": ["Specify the type of AC to display.", "Use this command to specify whether to display based on the type of AC."],
         "is_owner_only": true
+    },
+    {
+        "name": "set_everyone",
+        "usage": "/server set-do-everyone {True|False}",
+        "description": ["Set whether to notify everyone or not.", "Use this command to specify whether to notify everyone or not."],
+        "is_owner_only": true
     }
 ]

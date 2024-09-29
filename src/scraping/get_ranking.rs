@@ -135,7 +135,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
         let user = user.clone();
         let mut vec = contest_users_map.remove(&user.server_id.to_string()).unwrap_or_default();
         vec.insert(user.atcoder_username.to_lowercase());
-        contest_users_map.insert(user.server_id.to_string(), vec);
+        contest_users_map.insert(user.server_id.to_string().to_lowercase(), vec);
     }
 
     let channels: Vec<(String, String)> = conn.query("SELECT contest_channel_id,server_id FROM notifications where contest_channel_id is not null").unwrap();
@@ -160,9 +160,9 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
         let data: StandingsJson = serde_json::from_str(&json).unwrap_or_default();
         let mut rank_map: BTreeMap<i32, i32> = BTreeMap::new();
         let mut rank_people_map: BTreeMap<i32, i32> = BTreeMap::new();
-        let mut rank = 1;
-        let mut now_rank = 1;
-        let mut on_rank_people = 0;
+        let mut rank = 0;
+        let mut now_rank = 0;
+        let mut on_rank_people = 1;
         for users in &data.StandingsData {
             let mut is_rated = users.IsRated;
             if i.contest_type == 1 {
@@ -211,7 +211,8 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                 let mut points = vec![];
                 let mut task_name_to_index: BTreeMap<&str, usize> = BTreeMap::new();
                 for (index, task) in data.TaskInfo.iter().enumerate() {
-                    let mut difficulty = models[&task.Assignment].difficulty;
+                    let difficulty_option = models.get(&task.Assignment);
+                    let mut difficulty = if let Some(option) = difficulty_option { option.difficulty } else { 0.0 };
                     if difficulty <= 400.0 {
                         difficulty = 400.0 / (f64::exp((400.0 - difficulty) / 400.0))
                     }
@@ -279,7 +280,7 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                             } else {
                                 sum = *memo_data.get(&Float::try_new(x).unwrap()).unwrap();
                             }
-                            if rank > sum {
+                            if rank >= sum {
                                 r = x;
                             } else {
                                 l = x;

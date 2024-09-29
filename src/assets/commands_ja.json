@@ -145,5 +145,11 @@
         "usage": "/server set-ac-notify {all|unique}",
         "description": ["表示するACの種類を指定します", "このコマンドを使用して、ACの種類によって表示するかどうかを指定できます。"],
         "is_owner_only": true
+    },
+    {
+        "name": "set_everyone",
+        "usage": "/server set-do-everyone {True|False}",
+        "description": ["全員に通知するかどうかを設定します。", "このコマンドを使用して、全員に通知するかどうかを指定できます。"],
+        "is_owner_only": true
     }
 ]

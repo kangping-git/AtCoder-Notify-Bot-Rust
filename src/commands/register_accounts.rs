@@ -31,13 +31,13 @@ pub async fn register_account(ctx: Context<'_>, #[description = "atcoder_usernam
     let link_accounts: Vec<i32> = conn
         .exec(
             "SELECT id FROM users WHERE atcoder_username=:atcoder_username AND server_id=:server_id AND discord_id IS NULL",
-            params! {"atcoder_username" => &atcoder_user,"server_id" => &guild_id},
+            params! {"atcoder_username" => &atcoder_user.to_lowercase(),"server_id" => &guild_id},
         )
         .unwrap();
     if link_accounts.is_empty() {
         conn.exec_drop(
             r"INSERT INTO users (server_id, atcoder_username) VALUES (:server_id, :atcoder_username)",
-            params! {"server_id" => &guild_id, "atcoder_username" => &atcoder_user},
+            params! {"server_id" => &guild_id, "atcoder_username" => &atcoder_user.to_lowercase()},
         )?;
 
         let response = {
@@ -69,7 +69,7 @@ pub async fn register_account(ctx: Context<'_>, #[description = "atcoder_usernam
 
     let user_submission: Vec<u64> = conn.exec(
         r"SELECT epoch_second FROM submissions WHERE username=:username",
-        params! {"username" => &atcoder_user},
+        params! {"username" => &atcoder_user.to_lowercase()},
     )?;
     if user_submission.is_empty() {
         let submission_count_url = format!(
@@ -99,14 +99,14 @@ pub async fn register_account(ctx: Context<'_>, #[description = "atcoder_usernam
             r"INSERT INTO submission_data (user_id, problem_id) VALUES (:user_id, :problem_id)",
             submission_set.iter().map(|problem_id| {
                 params! {
-                    "user_id" => &atcoder_user,
+                    "user_id" => &atcoder_user.to_lowercase(),
                     "problem_id" => problem_id,
                 }
             }),
         )?;
         conn.exec_drop(
             r"INSERT INTO submissions (username, epoch_second) VALUES (:username, :epoch_second)",
-            params! {"username" => &atcoder_user, "epoch_second" => last_epoch},
+            params! {"username" => &atcoder_user.to_lowercase(), "epoch_second" => last_epoch},
         )?;
     }
 

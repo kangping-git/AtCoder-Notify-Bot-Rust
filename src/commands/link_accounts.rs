@@ -16,30 +16,13 @@ pub struct UserSubmissionCount {
 #[poise::command(prefix_command, slash_command, rename = "link-account")]
 pub async fn link_account(
     ctx: Context<'_>,
-    #[description = "discord_user"] discord_user: serenity::User,
     #[description = "atcoder_username"] atcoder_user: String,
+    #[description = "discord_user"] discord_user: Option<serenity::User>,
 ) -> Result<(), Error> {
     let pool = ctx.data().conn.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let guild_id = ctx.guild_id().unwrap().get();
-    let link_accounts: Vec<i32> = conn
-        .exec(
-            "SELECT id FROM users WHERE discord_id=:discord_id AND server_id=:server_id",
-            params! {"discord_id" => discord_user.id.to_string().parse::<i64>().unwrap(),"server_id" => &guild_id},
-        )
-        .unwrap();
-    ctx.defer_ephemeral().await?;
-    if link_accounts.is_empty() {
-        conn.exec_drop(
-            r"INSERT INTO users (server_id, discord_id, atcoder_username) VALUES (:server_id, :discord_id, :atcoder_username)",
-            params! {"server_id" => &guild_id, "discord_id" => discord_user.id.to_string().parse::<i64>().unwrap(), "atcoder_username" => &atcoder_user},
-        )?;
-    } else {
-        conn.exec_drop(
-            r"UPDATE users SET atcoder_username=:atcoder_username WHERE id=:id",
-            params! {"id" => &link_accounts[0], "atcoder_username" => &atcoder_user},
-        )?;
-    }
+
     let selected_data: Vec<String> = conn.exec(
         r"SELECT language FROM server_settings WHERE server_id=:server_id",
         params! {"server_id" => &guild_id},
@@ -47,6 +30,55 @@ pub async fn link_account(
     let mut lang = "ja";
     if selected_data.len() == 1 {
         lang = selected_data[0].as_str();
+    }
+
+    let owners: Vec<u64> = conn
+        .exec(
+            "SELECT user_id FROM owners WHERE guild_id=:guild_id",
+            params! {
+                "guild_id" => ctx.guild_id().unwrap_or_default().get()
+            },
+        )
+        .unwrap();
+    let has_permission = if owners.is_empty() || owners.contains(&{ ctx.author().id.get() }) {
+        true
+    } else {
+        ctx.author().id.get() == ctx.guild().unwrap().owner_id.get()
+    };
+    if !has_permission && discord_user.is_some() {
+        let response = {
+            let mut embed = serenity::CreateEmbed::default()
+                .author(CreateEmbedAuthor::new("").name("AtCoder Notify Bot v3").icon_url(ctx.data().avatar_url.as_str()).url("https://atcoder-notify.com/"));
+            if lang == "ja" {
+                embed = embed.title("エラー").description("権原がありません。");
+            } else {
+                embed = embed.title("Error").description("You do not have permission.");
+            }
+            poise::CreateReply::default().embed(embed).ephemeral(true)
+        };
+        ctx.send(response).await?;
+        return Ok(());
+    }
+    let discord_user = discord_user.unwrap_or_else(|| ctx.author().clone());
+
+    let link_accounts: Vec<i32> = conn
+        .exec(
+            "SELECT id FROM users WHERE discord_id=:discord_id AND server_id=:server_id",
+            params! {"discord_id" => discord_user.id.to_string().parse::<i64>().unwrap(),"server_id" => &guild_id},
+        )
+        .unwrap();
+
+    ctx.defer_ephemeral().await?;
+    if link_accounts.is_empty() {
+        conn.exec_drop(
+            r"INSERT INTO users (server_id, discord_id, atcoder_username) VALUES (:server_id, :discord_id, :atcoder_username)",
+            params! {"server_id" => &guild_id, "discord_id" => discord_user.id.to_string().parse::<i64>().unwrap(), "atcoder_username" => &atcoder_user.to_lowercase()},
+        )?;
+    } else {
+        conn.exec_drop(
+            r"UPDATE users SET atcoder_username=:atcoder_username WHERE id=:id",
+            params! {"id" => &link_accounts[0], "atcoder_username" => &atcoder_user.to_lowercase()},
+        )?;
     }
 
     let roles: Vec<(i8, u64)> = conn.exec(
@@ -72,7 +104,7 @@ pub async fn link_account(
             .exec(
                 "SELECT algo_rating FROM atcoder_user_ratings WHERE user_name=:user_name",
                 params! {
-                    "user_name" => &atcoder_user
+                    "user_name" => &atcoder_user.to_lowercase()
                 },
             )
             .unwrap();
@@ -109,7 +141,7 @@ pub async fn link_account(
 
     let user_submission: Vec<u64> = conn.exec(
         r"SELECT epoch_second FROM submissions WHERE username=:username",
-        params! {"username" => &atcoder_user},
+        params! {"username" => &atcoder_user.to_lowercase()},
     )?;
     if user_submission.is_empty() {
         let submission_count_url = format!(
@@ -139,14 +171,14 @@ pub async fn link_account(
             r"INSERT INTO submission_data (username, problem_id) VALUES (:username, :problem_id)",
             submission_set.iter().map(|problem_id| {
                 params! {
-                    "user_id" => &atcoder_user,
+                    "user_id" => &atcoder_user.to_lowercase(),
                     "problem_id" => problem_id,
                 }
             }),
         )?;
         conn.exec_drop(
             r"INSERT INTO submissions (username, epoch_second) VALUES (:username, :epoch_second)",
-            params! {"username" => &atcoder_user, "epoch_second" => last_epoch},
+            params! {"username" => &atcoder_user.to_lowercase(), "epoch_second" => last_epoch},
         )?;
     }
 
@@ -155,27 +187,55 @@ pub async fn link_account(
 
 /// Unlink the AtCoder account from the current Discord account.
 #[poise::command(prefix_command, slash_command, rename = "unlink-account")]
-pub async fn unlink_account(ctx: Context<'_>, #[description = "discord_user"] discord_user: serenity::User) -> Result<(), Error> {
+pub async fn unlink_account(ctx: Context<'_>, #[description = "discord_user"] discord_user: Option<serenity::User>) -> Result<(), Error> {
     let pool = ctx.data().conn.lock().await;
     let mut conn = pool.get_conn().unwrap();
     let guild_id = ctx.guild_id().unwrap().get();
+    let selected_data: Vec<String> = conn.exec(
+        r"SELECT language FROM server_settings WHERE server_id=:server_id",
+        params! {"server_id" => &guild_id},
+    )?;
+    let mut lang = "ja";
+    if selected_data.len() == 1 {
+        lang = selected_data[0].as_str();
+    }
+
+    let owners: Vec<u64> = conn
+        .exec(
+            "SELECT user_id FROM owners WHERE guild_id=:guild_id",
+            params! {
+                "guild_id" => ctx.guild_id().unwrap_or_default().get()
+            },
+        )
+        .unwrap();
+    let has_permission = if owners.is_empty() || owners.contains(&{ ctx.author().id.get() }) {
+        true
+    } else {
+        ctx.author().id.get() == ctx.guild().unwrap().owner_id.get()
+    };
+    if !has_permission && discord_user.is_some() {
+        let response = {
+            let mut embed = serenity::CreateEmbed::default()
+                .author(CreateEmbedAuthor::new("").name("AtCoder Notify Bot v3").icon_url(ctx.data().avatar_url.as_str()).url("https://atcoder-notify.com/"));
+            if lang == "ja" {
+                embed = embed.title("エラー").description("権原がありません。");
+            } else {
+                embed = embed.title("Error").description("You do not have permission.");
+            }
+            poise::CreateReply::default().embed(embed).ephemeral(true)
+        };
+        ctx.send(response).await?;
+        return Ok(());
+    }
+    let discord_user = discord_user.unwrap_or_else(|| ctx.author().clone());
     let link_accounts: Vec<i32> = conn
         .exec(
             "SELECT id FROM users WHERE discord_id=:discord_id AND server_id=:server_id",
             params! {"discord_id" => discord_user.id.to_string().parse::<i64>().unwrap(),"server_id" => &guild_id},
         )
         .unwrap();
-    let selected_data: Vec<String> = conn.exec(
-        r"SELECT language FROM server_settings WHERE server_id=:server_id",
-        params! {"server_id" => &guild_id},
-    )?;
 
     ctx.defer_ephemeral().await?;
-
-    let mut lang = "ja";
-    if selected_data.len() == 1 {
-        lang = selected_data[0].as_str();
-    }
 
     let roles: Vec<(i8, u64)> = conn.exec(
         r"SELECT role_color,role_id FROM roles WHERE guild_id=:server_id",

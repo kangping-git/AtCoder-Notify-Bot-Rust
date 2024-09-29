@@ -168,6 +168,7 @@ pub async fn get_submission(pool: &Arc<Mutex<Pool>>, ctx: &serenity::Context) {
                         let mut channel_ids = BTreeSet::new();
                         for k in users_map.get(&i).unwrap() {
                             if channel_ids.contains(&k.0) {
+                                log::info!("channel: {} was skipped", k.0);
                                 continue;
                             }
                             let channel = ChannelId::new(k.0);

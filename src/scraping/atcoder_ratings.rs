@@ -153,9 +153,17 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
         sleep(Duration::from_millis(500)).await;
         log::info!("get all user rating: {}", contest_id);
         let url = format!("https://{}/results/json", contest_id);
-        let response = client.get(url).send().unwrap().text().unwrap_or_default();
-        let response_text = response.trim();
-        let data: Vec<ResultData> = serde_json::from_str(response_text).unwrap();
+        let data: Vec<ResultData>;
+        loop {
+            let response = client.get(&url).send().unwrap().text().unwrap_or_default();
+            let response_text = response.trim();
+            let data_temp = serde_json::from_str(response_text);
+            if data_temp.is_ok() {
+                data = data_temp.unwrap();
+                break;
+            }
+            sleep(Duration::from_millis(1000)).await;
+        }
         if !data.is_empty() {
             is_first = false;
             contests_list.push(contest_id.clone());
@@ -180,7 +188,7 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                         }
                         if !has_cache {
                             let algo_flag = if *contest_type == 0 { "contestType=algo" } else { "contestType=heuristic" };
-                            sleep(Duration::from_millis(500)).await;
+                            sleep(Duration::from_millis(700)).await;
                             println!("get inner performance: {}", i.UserScreenName);
                             let user_rating_page = format!("https://atcoder.jp/users/{}/history/json?{}", &i.UserScreenName, algo_flag);
                             println!("{user_rating_page}");

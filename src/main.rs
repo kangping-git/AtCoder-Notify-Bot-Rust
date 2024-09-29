@@ -150,7 +150,7 @@ async fn main() {
                     if let serenity::FullEvent::Message { new_message: message } = event {
                         println!("{}", message.content);
                         if format!("{:x}", sha2::Sha256::digest(&message.content)) == "a69893e03d93e1e4d0f66dd41e9df574b70d8f3281ef499eaf04e0437d3cad17" {
-                            message.reply(&ctx.http, std::env::var("SEACRET_COMMAND_OUTPUT").unwrap_or("** **".to_string())).await.unwrap_or_default();
+                            message.reply(&ctx.http, std::env::var("SECRET_COMMAND_OUTPUT").unwrap_or("** **".to_string())).await.unwrap_or_default();
                         }
                     } else if let serenity::FullEvent::InteractionCreate {
                         interaction: serenity::Interaction::Component(interaction),

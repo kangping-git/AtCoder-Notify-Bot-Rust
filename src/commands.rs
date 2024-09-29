@@ -9,6 +9,7 @@ pub mod rating;
 pub mod register_accounts;
 pub mod role;
 pub mod set_ac_notify;
+pub mod set_everyone;
 pub mod set_language;
 pub mod set_notification_contest;
 pub mod set_notification_submission;
