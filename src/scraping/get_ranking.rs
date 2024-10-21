@@ -306,7 +306,8 @@ pub async fn get_ranking(pool: &Arc<Mutex<Pool>>, cookie_store: &Arc<Jar>, ctx: 
                                        ON
                                            contests.contest_id = user_ratings.contest
                                        WHERE
-                                           user_name = :user_name AND type = :type",
+                                           user_name = :user_name AND type = :type
+                                       ORDER BY contests.start_time",
                                 params! {
                                     "user_name" => &users.UserScreenName,
                                     "type" => i.contest_type

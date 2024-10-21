@@ -251,8 +251,8 @@ async fn get_history(pool: web::Data<Pool>, id: web::Path<String>, query: web::Q
             history.push(UserHistoryElement {
                 contest_id: i.0,
                 rating: i.3,
-                real_performance: i.2,
-                performance: i.1,
+                real_performance: i.1,
+                performance: i.2,
                 start_time: i.4,
                 duration: i.5,
             })

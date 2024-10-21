@@ -318,7 +318,6 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
             let mut old_rating = vec![];
             let mut new_rating = vec![];
             let mut diff = vec![];
-            let mut rated = vec![];
             let mut performance = vec![];
             let mut user_width = 0;
             for (i, result_data) in user_data.iter().enumerate() {
@@ -383,10 +382,6 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                     }
                     .to_string(),
                 });
-                rated.push(TextConfig {
-                    value: if result_data.IsRated { "Yes".to_string() } else { "No".to_string() },
-                    color: if result_data.IsRated { "white" } else { "gray" }.to_string(),
-                });
 
                 let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
                 layout.append(&[font.clone()], &TextStyle::new(&result_data.UserScreenName, scale, 0));
@@ -433,18 +428,12 @@ pub async fn get_ratings(cookie_store: &Arc<Jar>, conn_raw: &Arc<Mutex<Pool>>, c
                     align: Align::Middle,
                     data: diff,
                 }),
-                Row::Text(TableRowsText {
-                    title: Title::Text("Rated".to_string()),
-                    width: 300,
-                    align: Align::Middle,
-                    data: rated,
-                }),
             ];
 
             if !user_data.is_empty() {
                 let svg = create_table::create_table(
                     &Arc::new(Mutex::new(pool.clone())),
-                    format!("レーティング更新:{}", user_data[0].ContestNameEn),
+                    format!("レーティング更新: {}", user_data[0].ContestNameEn),
                     rows,
                 )
                 .await;

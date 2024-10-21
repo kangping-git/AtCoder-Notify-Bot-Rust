@@ -103,14 +103,8 @@ impl CreateUserRating {
         let mut ctx = Context::new();
         ctx.insert("percent", &percent);
         ctx.insert("user_name", &format!("gradient_user_rating_{}", rating));
-        ctx.insert(
-            "rating_color",
-            &rating_colors[std::cmp::min(((rating + 399) / 400) as usize, rating_colors.len() - 1)],
-        );
-        ctx.insert(
-            "stroke_color",
-            &stroke_colors[std::cmp::min(((rating + 399) / 400) as usize, stroke_colors.len() - 1)],
-        );
+        ctx.insert("rating_color", &rating_colors[std::cmp::min((rating / 400) as usize, rating_colors.len())]);
+        ctx.insert("stroke_color", &stroke_colors[std::cmp::min((rating / 400) as usize, stroke_colors.len())]);
         ctx.insert("fill_url", &fill);
         ctx.insert("username", &user);
         ctx.insert("x", &(x + 100));
